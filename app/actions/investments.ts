@@ -1,31 +1,38 @@
 'use server'
 
-import { and, desc, eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { investments, plans, referrals, supportMessages, supportThreads, wallets } from '@/lib/db/schema'
+import { deposits, paymentAccounts, plans, user } from '@/lib/db/schema'
 
-async function getUserId() { const session = await auth.api.getSession({ headers: await headers() }); if (!session?.user) throw new Error('Unauthorized'); return session.user.id }
-
-export async function getActivePlans() { return db.select().from(plans).where(eq(plans.active, true)).orderBy(plans.displayOrder) }
-export async function getInvestments() { const userId = await getUserId(); return db.select().from(investments).where(eq(investments.userId, userId)).orderBy(desc(investments.startedAt)) }
-
-const investSchema = z.object({ planId: z.string().uuid(), amountMinor: z.number().int().positive() })
-export async function createInvestment(input: z.input<typeof investSchema>) {
-  const userId = await getUserId(); const data = investSchema.parse(input)
-  const [plan] = await db.select().from(plans).where(and(eq(plans.id, data.planId), eq(plans.active, true))).limit(1)
-  const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1)
-  if (!plan || !wallet || data.amountMinor < plan.minimumMinor || data.amountMinor > plan.maximumMinor || wallet.availableMinor < data.amountMinor) throw new Error('Investment eligibility check failed')
-  const profitMinor = Math.round(data.amountMinor * plan.returnBps / 10000); const maturesAt = new Date(Date.now() + plan.durationDays * 86400000)
-  const [investment] = await db.insert(investments).values({ userId, planId: plan.id, planNameSnapshot: plan.name, principalMinor: data.amountMinor, returnBpsSnapshot: plan.returnBps, profitMinor, maturityMinor: data.amountMinor + profitMinor, durationDaysSnapshot: plan.durationDays, maturesAt }).returning()
-  await db.update(wallets).set({ availableMinor: wallet.availableMinor - data.amountMinor, investedMinor: wallet.investedMinor + data.amountMinor, updatedAt: new Date() }).where(and(eq(wallets.userId, userId), eq(wallets.availableMinor, wallet.availableMinor)))
-  revalidatePath('/'); return investment
+async function getUserId() {
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user) throw new Error('Unauthorized')
+  return session.user.id
 }
 
-export async function getReferralSummary() { const userId = await getUserId(); return db.select().from(referrals).where(eq(referrals.referrerUserId, userId)).orderBy(desc(referrals.createdAt)) }
-export async function getSupportThreads() { const userId = await getUserId(); return db.select().from(supportThreads).where(eq(supportThreads.userId, userId)).orderBy(desc(supportThreads.updatedAt)) }
-const supportSchema = z.object({ subject: z.string().trim().min(3).max(100), body: z.string().trim().min(1).max(2000) })
-export async function createSupportThread(input: z.input<typeof supportSchema>) { const userId = await getUserId(); const data = supportSchema.parse(input); const [thread] = await db.insert(supportThreads).values({ userId, subject: data.subject }).returning(); await db.insert(supportMessages).values({ threadId: thread.id, userId, body: data.body, senderType: 'USER' }); revalidatePath('/'); return thread }
+export async function getPublicPlans() { return db.select().from(plans).where(eq(plans.active, true)).orderBy(asc(plans.displayOrder)) }
+export async function getPaymentAccounts() { return db.select().from(paymentAccounts).where(eq(paymentAccounts.active, true)).orderBy(asc(paymentAccounts.displayOrder)) }
+
+const proofSchema = z.object({ planId: z.string().uuid(), paymentAccountId: z.string().uuid(), amountMinor: z.number().int().positive(), transferReference: z.string().trim().min(4).max(80), proofName: z.string().trim().min(1).max(160) })
+export async function submitInvestmentProof(input: z.input<typeof proofSchema>) {
+  const userId = await getUserId(); const data = proofSchema.parse(input)
+  const [plan] = await db.select().from(plans).where(and(eq(plans.id, data.planId), eq(plans.active, true))).limit(1)
+  const [account] = await db.select().from(paymentAccounts).where(and(eq(paymentAccounts.id, data.paymentAccountId), eq(paymentAccounts.active, true))).limit(1)
+  if (!plan || !account || data.amountMinor < plan.minimumMinor || data.amountMinor > plan.maximumMinor) throw new Error('Invalid plan, account, or amount')
+  const [deposit] = await db.insert(deposits).values({ userId, planId: plan.id, paymentAccountId: account.id, amountMinor: data.amountMinor, transferReference: data.transferReference, paymentProofName: data.proofName, status: 'PENDING' }).returning()
+  revalidatePath('/'); return deposit
+}
+
+async function requireAdmin() {
+  const session = await auth.api.getSession({ headers: await headers() }); if (!session?.user) throw new Error('Unauthorized')
+  const [record] = await db.select({ role: user.role }).from(user).where(eq(user.id, session.user.id)).limit(1)
+  if (record?.role !== 'ADMIN') throw new Error('Forbidden')
+}
+export async function getAdminPaymentAccounts() { await requireAdmin(); return db.select().from(paymentAccounts).orderBy(asc(paymentAccounts.displayOrder)) }
+
+const accountSchema = z.object({ label: z.string().trim().min(2).max(60), bankName: z.string().trim().min(2).max(80), accountName: z.string().trim().min(2).max(120), accountNumber: z.string().regex(/^\d{10}$/) })
+export async function createPaymentAccount(input: z.input<typeof accountSchema>) { await requireAdmin(); const data = accountSchema.parse(input); const [account] = await db.insert(paymentAccounts).values(data).returning(); revalidatePath('/admin'); return account }
