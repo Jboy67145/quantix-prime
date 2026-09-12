@@ -14,7 +14,7 @@ async function getUserId() {
 export async function getPublicPlans() {
   const supabase = await createClient()
   const { data, error } = await supabase.from('quantix_plans').select('*').eq('active', true).order('display_order', { ascending: true })
-  if (error) throw new Error('Unable to load investment plans')
+  if (error) return []
   return data ?? []
 }
 

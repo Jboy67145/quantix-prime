@@ -12,7 +12,9 @@ async function sessionUser() {
 }
 
 export async function getOpenDraws() {
-  const userId = await sessionUser()
+  const user = await getCurrentUser()
+  if (!user) return []
+  const userId = user.id
   const supabase = await createClient()
   const now = new Date().toISOString()
   const { data: draws, error } = await supabase.from('quantix_lucky_draws').select('*').eq('status', 'OPEN').lte('opens_at', now).gte('closes_at', now).order('closes_at', { ascending: false })

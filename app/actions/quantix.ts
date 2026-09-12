@@ -11,6 +11,11 @@ async function getUserId() {
   return user.id
 }
 
+async function getOptionalUserId() {
+  const user = await getCurrentUser()
+  return user?.id ?? null
+}
+
 export async function getWallet() {
   const userId = await getUserId()
   const supabase = await createClient()

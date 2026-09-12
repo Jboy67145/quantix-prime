@@ -12,7 +12,9 @@ async function uid() {
 }
 
 export async function getNotifications() {
-  const userId = await uid()
+  const user = await getCurrentUser()
+  if (!user) return []
+  const userId = user.id
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('quantix_notifications')

@@ -12,8 +12,14 @@ async function getUserId() {
   return user.id
 }
 
+async function getOptionalUserId() {
+  const user = await getCurrentUser()
+  return user?.id ?? null
+}
+
 export async function getWalletSnapshot() {
-  const userId = await getUserId()
+  const userId = await getOptionalUserId()
+  if (!userId) return { wallet: null, ledger: [], active: [], trendPercent: 0 }
   const supabase = await createClient()
   const [{ data: wallet }, { data: ledger }, { data: active }] = await Promise.all([
     supabase.from('quantix_wallets').select('*').eq('user_id', userId).maybeSingle(),
@@ -27,7 +33,8 @@ export async function getWalletSnapshot() {
 }
 
 export async function getInvestedPlanIds() {
-  const userId = await getUserId()
+  const userId = await getOptionalUserId()
+  if (!userId) return []
   const supabase = await createClient()
   const { data } = await supabase.from('quantix_investments').select('plan_id').eq('user_id', userId)
   return (data ?? []).map((row) => row.plan_id)
@@ -48,14 +55,15 @@ export async function processMaturities() {
 }
 
 export async function getReferralSnapshot() {
-  const userId = await getUserId()
+  const userId = await getOptionalUserId()
+  if (!userId) return { profile: null, referrals: [], earned: 0, pending: 0, link: '' }
   const supabase = await createClient()
   const [{ data: profile }, { data: referrals }] = await Promise.all([
     supabase.from('profiles').select('username, invite_code').eq('id', userId).maybeSingle(),
     supabase.from('quantix_referrals').select('*').eq('referrer_user_id', userId).order('created_at', { ascending: false }),
   ])
   const rows = referrals ?? []
-  return { profile, referrals: rows, earned: rows.filter((row) => row.status === 'QUALIFIED').reduce((sum, row) => sum + Number(row.reward_minor), 0), pending: rows.filter((row) => row.status !== 'QUALIFIED').reduce((sum, row) => sum + Number(row.reward_minor), 0), link: profile?.invite_code ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/sign-up?ref=${profile.invite_code}` : '' }
+  return { profile, referrals: rows, earned: rows.filter((row) => row.status === 'QUALIFIED').reduce((sum, row) => sum + Number(row.reward_minor), 0), pending: rows.filter((row) => row.status !== 'QUALIFIED').reduce((sum, row) => sum + Number(row.reward_minor), 0), link: profile?.username ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/sign-up?ref=${encodeURIComponent(profile.username)}` : '' }
 }
 
 const payoutSchema = z.object({ bankName: z.string().trim().min(2).max(80), accountName: z.string().trim().min(2).max(120), accountNumber: z.string().regex(/^\d{10}$/) })
