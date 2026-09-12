@@ -1,6 +1,7 @@
-import { boolean, integer, jsonb, pgTable, text, timestamp, uuid, bigint } from 'drizzle-orm/pg-core'
-
-export const user = pgTable('user', {
+export const user = { table: 'profiles', id: 'id', role: 'role', username: 'username', inviteCode: 'invite_code' } as const
+/* Legacy table descriptors remain unavailable after Supabase migration; actions are being moved to typed Supabase queries. */
+export const userTableRemoved = true
+/* export const user = pgTable('user', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
@@ -46,5 +47,27 @@ export const walletLedger = pgTable('quantix_wallet_ledger', { id: uuid('id').de
 export const supportSettings = pgTable('quantix_support_settings', { id: uuid('id').defaultRandom().primaryKey(), email: text('email').notNull(), whatsapp: text('whatsapp'), hours: text('hours').notNull().default('Mon-Fri, 9am-5pm'), updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow() })
 export const withdrawalSettings = pgTable('quantix_withdrawal_settings', { id: uuid('id').defaultRandom().primaryKey(), timezone: text('timezone').notNull().default('Africa/Lagos'), enabledDays: text('enabled_days').array().notNull().default(['MON','TUE','WED','THU','FRI']), startTime: text('start_time').notNull().default('09:00'), endTime: text('end_time').notNull().default('17:00'), minimumMinor: bigint('minimum_minor', { mode: 'number' }).notNull().default(100000), maximumMinor: bigint('maximum_minor', { mode: 'number' }), enabled: boolean('enabled').notNull().default(true), updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow() })
 export const userPayoutAccounts = pgTable('quantix_payout_accounts', { id: uuid('id').defaultRandom().primaryKey(), userId: text('user_id').notNull(), bankName: text('bank_name').notNull(), accountName: text('account_name').notNull(), accountNumber: text('account_number').notNull(), isDefault: boolean('is_default').notNull().default(false), createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow() })
-export const withdrawalRequests = pgTable('quantix_withdrawals', { id: uuid('id').defaultRandom().primaryKey(), userId: text('user_id').notNull(), payoutAccountId: uuid('payout_account_id').notNull(), amountMinor: bigint('amount_minor', { mode: 'number' }).notNull(), feeMinor: bigint('fee_minor', { mode: 'number' }).notNull().default(0), netMinor: bigint('net_minor', { mode: 'number' }).notNull(), status: text('status').notNull().default('PENDING'), adminNote: text('admin_note'), createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(), processedAt: timestamp('processed_at', { withTimezone: true }) })
+export const withdrawalRequests = pgTable('quantix_withdrawals', { id: uuid('id').defaultRandom().primaryKey(), userId: text('user_id').notNull(), payoutAccountId: uuid('payout_account_id').notNull(), amountMinor: bigint('amount_minor', { mode: 'number' }).notNull(), feeMinor: bigint('fee_minor', { mode: 'number' }).notNull().default(0), netMinor: bigint('net_minor', { mode: 'number' }).notNull(), status: text('status').notNull().default('PENDING'), adminNote: text('admin_note'), createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(), processedAt: timestamp('processed_at', { withTimezone: true }) }) */
+
+export const profiles = { table: 'profiles' } as const
+export const wallets = { table: 'quantix_wallets' } as const
+export const plans = { table: 'quantix_plans' } as const
+export const paymentAccounts = { table: 'quantix_payment_accounts' } as const
+export const investments = { table: 'quantix_investments' } as const
+export const ledgerEntries = { table: 'quantix_ledger_entries' } as const
+export const payoutAccounts = { table: 'quantix_payout_accounts' } as const
+export const deposits = { table: 'quantix_deposits' } as const
+export const withdrawals = { table: 'quantix_withdrawals' } as const
+export const notifications = { table: 'quantix_notifications' } as const
+export const auditLogs = { table: 'quantix_audit_logs' } as const
+export const referrals = { table: 'quantix_referrals' } as const
+export const supportThreads = { table: 'quantix_support_threads' } as const
+export const supportMessages = { table: 'quantix_support_messages' } as const
+export const luckyDraws = { table: 'quantix_lucky_draws' } as const
+export const luckyEntries = { table: 'quantix_lucky_entries' } as const
+export const walletLedger = { table: 'quantix_ledger_entries' } as const
+export const supportSettings = { table: 'quantix_support_settings' } as const
+export const withdrawalSettings = { table: 'quantix_withdrawal_settings' } as const
+export const userPayoutAccounts = { table: 'quantix_payout_accounts' } as const
+export const withdrawalRequests = { table: 'quantix_withdrawals' } as const
 

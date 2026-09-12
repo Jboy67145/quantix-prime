@@ -1,21 +1,24 @@
-import { betterAuth } from 'better-auth'
-import { pool } from '@/lib/db'
+import { createClient } from '@/lib/supabase/server'
 
-const betterAuthSecret = process.env.BETTER_AUTH_SECRET?.trim()
-
-if (!betterAuthSecret) {
-  throw new Error('BETTER_AUTH_SECRET must be configured before starting Better Auth')
+export const auth = {
+  api: {
+    getSession: async () => {
+      const supabase = await createClient()
+      const { data } = await supabase.auth.getUser()
+      return data.user ? { user: data.user } : null
+    },
+  },
 }
 
-export const auth = betterAuth({
-  database: pool,
-  secret: betterAuthSecret,
-  baseURL: process.env.BETTER_AUTH_URL ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : process.env.V0_RUNTIME_URL),
-  emailAndPassword: { enabled: true, autoSignIn: true },
-  trustedOrigins: [
-    ...(process.env.NODE_ENV === 'development' ? ['http://localhost:3000', ...(process.env.V0_RUNTIME_URL ? [process.env.V0_RUNTIME_URL] : []), ...(process.env.V0_DEV_APP_URL ? [process.env.V0_DEV_APP_URL] : []), ...(process.env.V0_BUILD_URL ? [process.env.V0_BUILD_URL] : []), ...(process.env.V0_SANDBOX_URL ? [process.env.V0_SANDBOX_URL] : [])] : []),
-    ...(process.env.NODE_ENV === 'production' ? [...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []), ...(process.env.VERCEL_PROJECT_PRODUCTION_URL ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`] : [])] : []),
-  ],
-  session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
-  ...(process.env.NODE_ENV === 'development' ? { advanced: { defaultCookieAttributes: { sameSite: 'none' as const, secure: true } } } : {}),
-})
+export async function getCurrentUser() {
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.getUser()
+  if (error) return null
+  return data.user
+}
+
+export async function requireUser() {
+  const user = await getCurrentUser()
+  if (!user) throw new Error('Unauthorized')
+  return user
+}
