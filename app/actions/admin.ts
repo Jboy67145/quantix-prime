@@ -22,6 +22,11 @@ export async function reviewDeposit(input: { id: string; status: 'APPROVED' | 'R
   const supabase = await createClient()
   const { data: deposit, error } = await supabase.from('quantix_deposits').update({ status: input.status, admin_note: input.reason?.trim() || null, reviewed_at: new Date().toISOString() }).eq('id', input.id).eq('status', 'PENDING').select().maybeSingle()
   if (error || !deposit) throw new Error('Deposit is no longer pending')
+  if (input.status === 'APPROVED') {
+    const { data: wallet } = await supabase.from('quantix_wallets').select('available_minor').eq('user_id', deposit.user_id).maybeSingle()
+    if (wallet) await supabase.from('quantix_wallets').update({ available_minor: Number(wallet.available_minor) + Number(deposit.amount_minor), updated_at: new Date().toISOString() }).eq('user_id', deposit.user_id)
+    await supabase.from('quantix_ledger_entries').upsert({ user_id: deposit.user_id, amount_minor: deposit.amount_minor, direction: 'CREDIT', type: 'DEPOSIT', reference: `deposit:${deposit.id}`, status: 'POSTED', metadata: { paymentAccountId: deposit.payment_account_id } }, { onConflict: 'reference', ignoreDuplicates: true })
+  }
   await supabase.from('quantix_audit_logs').insert({ actor_id: adminId, actor_role: 'ADMIN', action: `DEPOSIT_${input.status}`, target_type: 'DEPOSIT', target_id: input.id, reason: input.reason?.trim() || null, after_state: deposit })
   revalidatePath('/admin')
   return deposit
