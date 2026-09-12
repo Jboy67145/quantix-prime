@@ -8,7 +8,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { investments, ledgerEntries, notifications, referrals, user, userPayoutAccounts, wallets, withdrawalRequests, withdrawalSettings } from '@/lib/db/schema'
 
-async function getSession() { const session = await auth.api.getSession({ headers: await headers() }); if (!session?.user) throw new Error('Unauthorized'); return session }
+async function getSession() { const session = await auth.getSession(); if (!session?.user) throw new Error('Unauthorized'); return session }
 async function getUserId() { return (await getSession()).user.id }
 
 export async function getWalletSnapshot() {

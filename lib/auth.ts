@@ -1,6 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 
+async function getSession() {
+      const supabase = await createClient()
+      const { data } = await supabase.auth.getUser()
+      return data.user ? { user: data.user } : null
+    }
+
 export const auth = {
+  getSession,
   api: {
     getSession: async () => {
       const supabase = await createClient()

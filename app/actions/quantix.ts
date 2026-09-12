@@ -9,7 +9,7 @@ import { db } from '@/lib/db'
 import { deposits, ledgerEntries, payoutAccounts, wallets, withdrawals } from '@/lib/db/schema'
 
 async function getUserId() {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const session = await auth.getSession()
   if (!session?.user) throw new Error('Unauthorized')
   return session.user.id
 }

@@ -9,7 +9,7 @@ import { db } from '@/lib/db'
 import { deposits, paymentAccounts, plans, user } from '@/lib/db/schema'
 
 async function getUserId() {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const session = await auth.getSession()
   if (!session?.user) throw new Error('Unauthorized')
   return session.user.id
 }
@@ -28,7 +28,7 @@ export async function submitInvestmentProof(input: z.input<typeof proofSchema>) 
 }
 
 async function requireAdmin() {
-  const session = await auth.api.getSession({ headers: await headers() }); if (!session?.user) throw new Error('Unauthorized')
+  const session = await auth.getSession(); if (!session?.user) throw new Error('Unauthorized')
   const [record] = await db.select({ role: user.role }).from(user).where(eq(user.id, session.user.id)).limit(1)
   if (record?.role !== 'ADMIN') throw new Error('Forbidden')
 }

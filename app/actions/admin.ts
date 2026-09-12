@@ -8,7 +8,7 @@ import { db } from '@/lib/db'
 import { deposits, auditLogs, user } from '@/lib/db/schema'
 
 async function getAdmin() {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const session = await auth.getSession()
   if (!session?.user) throw new Error('Unauthorized')
   const [adminUser] = await db.select({ id: user.id, role: user.role }).from(user).where(eq(user.id, session.user.id)).limit(1)
   if (!adminUser || adminUser.role !== 'ADMIN') throw new Error('Forbidden')
