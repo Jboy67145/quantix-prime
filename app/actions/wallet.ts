@@ -95,3 +95,15 @@ export async function requestWithdrawal(input: { payoutAccountId: string; amount
   revalidatePath('/')
   return request
 }
+
+export async function getWalletDetails() {
+  const userId = await getUserId()
+  const supabase = await createClient()
+  const [{ data: wallet }, { data: deposits }, { data: withdrawals }, { data: accounts }] = await Promise.all([
+    supabase.from('quantix_wallets').select('*').eq('user_id', userId).maybeSingle(),
+    supabase.from('quantix_deposits').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
+    supabase.from('quantix_withdrawals').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
+    supabase.from('quantix_payout_accounts').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+  ])
+  return { wallet, deposits: deposits ?? [], withdrawals: withdrawals ?? [], accounts: accounts ?? [] }
+}

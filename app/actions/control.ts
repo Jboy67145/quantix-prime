@@ -2,15 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { getCurrentUser } from '@/lib/auth'
+import { requireAdminUser } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 
 async function requireAdmin() {
-  const user = await getCurrentUser()
-  if (!user) throw new Error('Unauthorized')
-  const supabase = await createClient()
-  const { data: profile } = await supabase.from('profiles').select('id, role').eq('id', user.id).maybeSingle()
-  if (!profile || profile.role !== 'ADMIN') throw new Error('Forbidden')
+  const { profile } = await requireAdminUser()
   return profile.id
 }
 
