@@ -1,14 +1,61 @@
 'use server'
-import { and, asc, desc, eq } from 'drizzle-orm'
-import { headers } from 'next/headers'
+
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { auth } from '@/lib/auth'
-import { db } from '@/lib/db'
-import { auditLogs, plans, paymentAccounts, withdrawalRequests, withdrawalSettings, user } from '@/lib/db/schema'
-async function requireAdmin() { const session = await auth.getSession(); if (!session?.user) throw new Error('Unauthorized'); const [record] = await db.select({ role: user.role }).from(user).where(eq(user.id, session.user.id)).limit(1); if (record?.role !== 'ADMIN') throw new Error('Forbidden'); return session.user.id }
-export async function getAdminControlData() { await requireAdmin(); const [planRows, accountRows, withdrawals, settings] = await Promise.all([db.select().from(plans).orderBy(asc(plans.category), asc(plans.displayOrder)), db.select().from(paymentAccounts).orderBy(asc(paymentAccounts.displayOrder)), db.select().from(withdrawalRequests).orderBy(desc(withdrawalRequests.createdAt)).limit(50), db.select().from(withdrawalSettings).limit(1)]); return { plans: planRows, accounts: accountRows, withdrawals, settings: settings[0] || null } }
-const planSchema = z.object({ name: z.string().min(2), description: z.string().min(2), category: z.enum(['DAILY','WEEKLY','MONTHLY']), minimumMinor: z.number().int().positive(), maximumMinor: z.number().int().positive(), returnBps: z.number().int().positive(), durationDays: z.number().int().positive(), terms: z.string().min(2) })
-export async function createPlan(input: z.input<typeof planSchema>) { const actorId = await requireAdmin(); const data = planSchema.parse(input); const [plan] = await db.insert(plans).values(data).returning(); await db.insert(auditLogs).values({ actorId, actorRole: 'ADMIN', action: 'CREATE_PLAN', targetType: 'PLAN', targetId: plan.id }); revalidatePath('/admin'); return plan }
-export async function updateWithdrawalSettings(input: { timezone: string; enabledDays: string[]; startTime: string; endTime: string; minimumMinor: number; maximumMinor?: number | null; enabled: boolean }) { const actorId = await requireAdmin(); const data = input; const [existing] = await db.select().from(withdrawalSettings).limit(1); const result = existing ? await db.update(withdrawalSettings).set({ ...data, updatedAt: new Date() }).where(eq(withdrawalSettings.id, existing.id)).returning() : await db.insert(withdrawalSettings).values(data).returning(); await db.insert(auditLogs).values({ actorId, actorRole: 'ADMIN', action: 'UPDATE_WITHDRAWAL_WINDOW', targetType: 'WITHDRAWAL_SETTINGS' }); revalidatePath('/admin'); return result[0] }
-export async function reviewWithdrawal(id: string, status: 'APPROVED' | 'REJECTED', adminNote?: string) { const actorId = await requireAdmin(); const [item] = await db.update(withdrawalRequests).set({ status, adminNote, processedAt: new Date() }).where(and(eq(withdrawalRequests.id, id), eq(withdrawalRequests.status, 'PENDING'))).returning(); if (!item) throw new Error('Withdrawal already processed'); await db.insert(auditLogs).values({ actorId, actorRole: 'ADMIN', action: `WITHDRAWAL_${status}`, targetType: 'WITHDRAWAL', targetId: id, reason: adminNote }); revalidatePath('/admin'); return item }
+import { getCurrentUser } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
+
+async function requireAdmin() {
+  const user = await getCurrentUser()
+  if (!user) throw new Error('Unauthorized')
+  const supabase = await createClient()
+  const { data: profile } = await supabase.from('profiles').select('id, role').eq('id', user.id).maybeSingle()
+  if (!profile || profile.role !== 'ADMIN') throw new Error('Forbidden')
+  return profile.id
+}
+
+export async function getAdminControlData() {
+  await requireAdmin()
+  const supabase = await createClient()
+  const [{ data: plans }, { data: accounts }, { data: withdrawals }, { data: settings }] = await Promise.all([
+    supabase.from('quantix_plans').select('*').order('category').order('display_order'),
+    supabase.from('quantix_payment_accounts').select('*').order('display_order'),
+    supabase.from('quantix_withdrawals').select('*').order('created_at', { ascending: false }).limit(50),
+    supabase.from('quantix_withdrawal_settings').select('*').limit(1),
+  ])
+  return { plans: plans ?? [], accounts: accounts ?? [], withdrawals: withdrawals ?? [], settings: settings?.[0] ?? null }
+}
+
+const planSchema = z.object({ name: z.string().min(2), description: z.string().min(2), category: z.enum(['DAILY', 'WEEKLY', 'MONTHLY']), minimumMinor: z.number().int().positive(), maximumMinor: z.number().int().positive(), returnBps: z.number().int().positive(), durationDays: z.number().int().positive(), terms: z.string().min(2) })
+export async function createPlan(input: z.input<typeof planSchema>) {
+  const actorId = await requireAdmin()
+  const data = planSchema.parse(input)
+  const supabase = await createClient()
+  const { data: plan, error } = await supabase.from('quantix_plans').insert({ name: data.name, description: data.description, category: data.category, minimum_minor: data.minimumMinor, maximum_minor: data.maximumMinor, return_bps: data.returnBps, duration_days: data.durationDays, terms: data.terms }).select().single()
+  if (error) throw new Error('Unable to create plan')
+  await supabase.from('quantix_audit_logs').insert({ actor_id: actorId, actor_role: 'ADMIN', action: 'CREATE_PLAN', target_type: 'PLAN', target_id: plan.id })
+  revalidatePath('/admin')
+  return plan
+}
+
+export async function updateWithdrawalSettings(input: { timezone: string; enabledDays: string[]; startTime: string; endTime: string; minimumMinor: number; maximumMinor?: number | null; enabled: boolean }) {
+  const actorId = await requireAdmin()
+  const supabase = await createClient()
+  const { data: existing } = await supabase.from('quantix_withdrawal_settings').select('id').limit(1).maybeSingle()
+  const payload = { timezone: input.timezone, enabled_days: input.enabledDays, start_time: input.startTime, end_time: input.endTime, minimum_minor: input.minimumMinor, maximum_minor: input.maximumMinor ?? null, enabled: input.enabled, updated_at: new Date().toISOString() }
+  const result = existing ? await supabase.from('quantix_withdrawal_settings').update(payload).eq('id', existing.id).select().single() : await supabase.from('quantix_withdrawal_settings').insert(payload).select().single()
+  if (result.error) throw new Error('Unable to update withdrawal settings')
+  await supabase.from('quantix_audit_logs').insert({ actor_id: actorId, actor_role: 'ADMIN', action: 'UPDATE_WITHDRAWAL_WINDOW', target_type: 'WITHDRAWAL_SETTINGS' })
+  revalidatePath('/admin')
+  return result.data
+}
+
+export async function reviewWithdrawal(id: string, status: 'APPROVED' | 'REJECTED', adminNote?: string) {
+  const actorId = await requireAdmin()
+  const supabase = await createClient()
+  const { data: item, error } = await supabase.from('quantix_withdrawals').update({ status, admin_note: adminNote ?? null, processed_at: new Date().toISOString() }).eq('id', id).eq('status', 'PENDING').select().maybeSingle()
+  if (error || !item) throw new Error('Withdrawal already processed')
+  await supabase.from('quantix_audit_logs').insert({ actor_id: actorId, actor_role: 'ADMIN', action: `WITHDRAWAL_${status}`, target_type: 'WITHDRAWAL', target_id: id, reason: adminNote ?? null })
+  revalidatePath('/admin')
+  return item
+}
