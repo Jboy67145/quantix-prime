@@ -1,37 +1,47 @@
 'use server'
 
-import { and, desc, eq } from 'drizzle-orm'
-import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { auth } from '@/lib/auth'
-import { db } from '@/lib/db'
-import { deposits, ledgerEntries, payoutAccounts, wallets, withdrawals } from '@/lib/db/schema'
+import { getCurrentUser } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
 
 async function getUserId() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) throw new Error('Unauthorized')
-  return session.user.id
+  const user = await getCurrentUser()
+  if (!user) throw new Error('Unauthorized')
+  return user.id
+}
+
+async function getOptionalUserId() {
+  const user = await getCurrentUser()
+  return user?.id ?? null
 }
 
 export async function getWallet() {
   const userId = await getUserId()
-  const existing = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1)
-  if (existing[0]) return existing[0]
-  const [created] = await db.insert(wallets).values({ userId }).returning()
+  const supabase = await createClient()
+  const { data, error } = await supabase.from('quantix_wallets').select('*').eq('user_id', userId).maybeSingle()
+  if (error) throw new Error('Unable to load wallet')
+  if (data) return data
+  const { data: created, error: createError } = await supabase.from('quantix_wallets').insert({ user_id: userId }).select().single()
+  if (createError) throw new Error('Unable to create wallet')
   return created
 }
 
 export async function getLedger(limit = 20) {
   const userId = await getUserId()
-  return db.select().from(ledgerEntries).where(eq(ledgerEntries.userId, userId)).orderBy(desc(ledgerEntries.createdAt)).limit(Math.min(Math.max(limit, 1), 50))
+  const supabase = await createClient()
+  const { data, error } = await supabase.from('quantix_ledger_entries').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(Math.min(Math.max(limit, 1), 50))
+  if (error) throw new Error('Unable to load ledger')
+  return data ?? []
 }
 
 const depositSchema = z.object({ amountMinor: z.number().int().positive().max(100_000_000_000), senderName: z.string().trim().min(2).max(120), transferReference: z.string().trim().min(4).max(120) })
 export async function submitDeposit(input: z.input<typeof depositSchema>) {
   const userId = await getUserId()
   const data = depositSchema.parse(input)
-  const [deposit] = await db.insert(deposits).values({ userId, ...data }).returning()
+  const supabase = await createClient()
+  const { data: deposit, error } = await supabase.from('quantix_deposits').insert({ user_id: userId, amount_minor: data.amountMinor, sender_name: data.senderName, transfer_reference: data.transferReference }).select().single()
+  if (error) throw new Error('Unable to submit deposit')
   revalidatePath('/')
   return deposit
 }
@@ -40,13 +50,16 @@ const withdrawalSchema = z.object({ amountMinor: z.number().int().positive().max
 export async function submitWithdrawal(input: z.input<typeof withdrawalSchema>) {
   const userId = await getUserId()
   const data = withdrawalSchema.parse(input)
-  const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1)
-  const [account] = await db.select().from(payoutAccounts).where(and(eq(payoutAccounts.id, data.payoutAccountId), eq(payoutAccounts.userId, userId))).limit(1)
-  if (!wallet || wallet.availableMinor < data.amountMinor) throw new Error('Insufficient available balance')
+  const supabase = await createClient()
+  const { data: wallet } = await supabase.from('quantix_wallets').select('*').eq('user_id', userId).maybeSingle()
+  const { data: account } = await supabase.from('quantix_payout_accounts').select('*').eq('id', data.payoutAccountId).eq('user_id', userId).maybeSingle()
+  if (!wallet || wallet.available_minor < data.amountMinor) throw new Error('Insufficient available balance')
   if (!account) throw new Error('Payout account not found')
   const feeMinor = Math.round(data.amountMinor * 0.01)
-  const [withdrawal] = await db.insert(withdrawals).values({ userId, amountMinor: data.amountMinor, feeMinor, netMinor: data.amountMinor - feeMinor, payoutAccountSnapshot: account }).returning()
-  await db.update(wallets).set({ availableMinor: wallet.availableMinor - data.amountMinor, updatedAt: new Date() }).where(and(eq(wallets.userId, userId), eq(wallets.availableMinor, wallet.availableMinor)))
+  const { data: withdrawal, error } = await supabase.from('quantix_withdrawals').insert({ user_id: userId, payout_account_id: account.id, amount_minor: data.amountMinor, fee_minor: feeMinor, net_minor: data.amountMinor - feeMinor, payout_account_snapshot: account }).select().single()
+  if (error) throw new Error('Unable to submit withdrawal')
+  const { error: updateError } = await supabase.from('quantix_wallets').update({ available_minor: wallet.available_minor - data.amountMinor, updated_at: new Date().toISOString() }).eq('user_id', userId).eq('available_minor', wallet.available_minor)
+  if (updateError) throw new Error('Unable to reserve withdrawal balance')
   revalidatePath('/')
   return withdrawal
 }

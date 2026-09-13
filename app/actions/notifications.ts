@@ -1,10 +1,40 @@
 'use server'
-import { and, desc, eq, isNull } from 'drizzle-orm'
-import { headers } from 'next/headers'
+
 import { revalidatePath } from 'next/cache'
-import { auth } from '@/lib/auth'
-import { db } from '@/lib/db'
-import { notifications } from '@/lib/db/schema'
-async function uid() { const s = await auth.api.getSession({ headers: await headers() }); if (!s?.user) throw new Error('Unauthorized'); return s.user.id }
-export async function getNotifications() { const userId = await uid(); return db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt)).limit(30) }
-export async function markNotificationRead(id: string) { const userId = await uid(); await db.update(notifications).set({ readAt: new Date() }).where(and(eq(notifications.id, id), eq(notifications.userId, userId))); revalidatePath('/') }
+import { z } from 'zod'
+import { getCurrentUser } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
+
+async function uid() {
+  const user = await getCurrentUser()
+  if (!user) throw new Error('Unauthorized')
+  return user.id
+}
+
+export async function getNotifications() {
+  const user = await getCurrentUser()
+  if (!user) return []
+  const userId = user.id
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('quantix_notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(30)
+  if (error) throw new Error('Unable to load notifications')
+  return data ?? []
+}
+
+export async function markNotificationRead(id: string) {
+  const userId = await uid()
+  const notificationId = z.string().uuid().parse(id)
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('quantix_notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('id', notificationId)
+    .eq('user_id', userId)
+  if (error) throw new Error('Unable to update notification')
+  revalidatePath('/')
+}
