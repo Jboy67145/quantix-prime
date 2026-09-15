@@ -49,7 +49,7 @@ export async function processMaturities() {
     if (!updated) continue
     await supabase.from('quantix_ledger_entries').upsert({ user_id: investment.user_id, reference: `maturity:${investment.id}`, type: 'MATURITY_PAYOUT', amount_minor: investment.maturity_minor, direction: 'CREDIT', metadata: { investmentId: investment.id } }, { onConflict: 'reference', ignoreDuplicates: true })
     const { data: wallet } = await supabase.from('quantix_wallets').select('available_minor, invested_minor, profit_minor').eq('user_id', investment.user_id).maybeSingle()
-    if (wallet) await supabase.from('quantix_wallets').update({ available_minor: Number(wallet.available_minor) + Number(investment.maturity_minor), profit_minor: Number(wallet.profit_minor) + Number(investment.profit_minor), invested_minor: Number(wallet.invested_minor) - Number(investment.principal_minor), updated_at: new Date().toISOString() }).eq('user_id', investment.user_id)
+    if (wallet) await supabase.from('quantix_wallets').update({ available_minor: Number(wallet.available_minor) + Number(investment.maturity_minor), profit_minor: Number(wallet.profit_minor) + Number(investment.profit_minor), invested_minor: Math.max(0, Number(wallet.invested_minor) - Number(investment.principal_minor)), updated_at: new Date().toISOString() }).eq('user_id', investment.user_id).eq('available_minor', wallet.available_minor).eq('invested_minor', wallet.invested_minor)
   }
   revalidatePath('/')
   return due?.length ?? 0
