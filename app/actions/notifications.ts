@@ -26,6 +26,12 @@ export async function getNotifications() {
   return data ?? []
 }
 
+export async function createUserNotification(input: { userId: string; title: string; body: string; type?: string }) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('quantix_notifications').insert({ user_id: input.userId, title: input.title, body: input.body, type: input.type || 'SYSTEM' })
+  if (error) throw new Error('Unable to create notification')
+}
+
 export async function markNotificationRead(id: string) {
   const userId = await uid()
   const notificationId = z.string().uuid().parse(id)

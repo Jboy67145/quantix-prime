@@ -39,7 +39,7 @@ export async function requireUser() {
 export async function requireAdminUser() {
   const user = await requireUser()
   const supabase = await createClient()
-  const { data: profile } = await supabase.from('profiles').select('id, role').eq('id', user.id).maybeSingle()
-  if (!profile || profile.role !== 'ADMIN' || !user.email || !ADMIN_EMAIL_ALLOWLIST.has(user.email.toLowerCase())) throw new Error('Forbidden')
+  const { data: profile } = await supabase.from('user').select('id, role, email').eq('id', user.id).maybeSingle()
+  if (!profile || String(profile.role).toUpperCase() !== 'ADMIN') throw new Error('Forbidden')
   return { user, profile }
 }

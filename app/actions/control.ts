@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { requireAdminUser } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
+import { createUserNotification } from '@/app/actions/notifications'
 
 async function requireAdmin() {
   const { profile } = await requireAdminUser()
@@ -51,6 +52,7 @@ export async function reviewWithdrawal(id: string, status: 'APPROVED' | 'REJECTE
   const supabase = await createClient()
   const { data: item, error } = await supabase.from('quantix_withdrawals').update({ status, admin_note: adminNote ?? null, processed_at: new Date().toISOString() }).eq('id', id).eq('status', 'PENDING').select().maybeSingle()
   if (error || !item) throw new Error('Withdrawal already processed')
+  await createUserNotification({ userId: item.user_id, title: status === 'APPROVED' ? 'Withdrawal approved' : 'Withdrawal rejected', body: adminNote || `Your withdrawal request is ${status.toLowerCase()}.`, type: 'WITHDRAWAL' })
   await supabase.from('quantix_audit_logs').insert({ actor_id: actorId, actor_role: 'ADMIN', action: `WITHDRAWAL_${status}`, target_type: 'WITHDRAWAL', target_id: id, reason: adminNote ?? null })
   revalidatePath('/admin')
   return item

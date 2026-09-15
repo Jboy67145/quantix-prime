@@ -8,6 +8,7 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   const router = useRouter()
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
+  const [referralCode, setReferralCode] = useState(() => typeof window === 'undefined' ? '' : new URLSearchParams(window.location.search).get('ref') || '')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -19,7 +20,7 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
     setPending(true)
     setError('')
     const result = isSignUp
-      ? await signUp.email({ name, username, email, password })
+      ? await signUp.email({ name, username, email, password, referralCode })
       : await signIn.email({ email, password })
     if (result.error) {
       setError('We could not complete that request. Check your details and try again.')
