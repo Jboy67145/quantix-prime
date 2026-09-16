@@ -5,8 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 
 const supabase = createClient()
 
-export const signIn = { email: async ({ email, password }: { email: string; password: string }) => supabase.auth.signInWithPassword({ email, password }) }
-export const signUp = { email: async ({ email, password, name, username, referralCode }: { email: string; password: string; name?: string; username?: string; referralCode?: string }) => supabase.auth.signUp({ email, password, options: { emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/auth/callback`, data: { name, username, referralCode: referralCode?.trim().toLowerCase() || null } } }) }
+export const signIn = { email: async ({ email, password }: { email: string; password: string }) => supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password }) }
+export const signUp = { email: async ({ email, password, name, username, referralCode }: { email: string; password: string; name?: string; username?: string; referralCode?: string }) => supabase.auth.signUp({ email: email.trim().toLowerCase(), password, options: { emailRedirectTo: `${window.location.origin}/auth/callback`, data: { name: name?.trim(), username: username?.trim().toLowerCase(), referralCode: referralCode?.trim().toLowerCase() || null } } }) }
 export const requestPasswordReset = (email: string) => supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` })
 export const updatePassword = (password: string) => supabase.auth.updateUser({ password })
 export const signOut = () => supabase.auth.signOut()

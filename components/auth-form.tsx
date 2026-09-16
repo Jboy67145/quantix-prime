@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signIn, signUp } from '@/lib/auth-client'
@@ -9,27 +9,43 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   const router = useRouter()
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
-  const [referralCode, setReferralCode] = useState(() => typeof window === 'undefined' ? '' : new URLSearchParams(window.location.search).get('ref') || '')
+  const [referralCode, setReferralCode] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
   const isSignUp = mode === 'sign-up'
+  useEffect(() => { if (isSignUp) setReferralCode(new URLSearchParams(window.location.search).get('ref') || '') }, [isSignUp])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setPending(true)
     setError('')
-    const result = isSignUp
-      ? await signUp.email({ name, username, email, password, referralCode })
-      : await signIn.email({ email, password })
-    if (result.error) {
-      setError('We could not complete that request. Check your details and try again.')
+    try {
+      const result = isSignUp
+        ? await signUp.email({ name, username, email, password, referralCode })
+        : await signIn.email({ email, password })
+      if (result.error) {
+        const message = result.error.message?.toLowerCase() || ''
+        if (message.includes('invalid login credentials')) setError('Email or password is incorrect.')
+        else if (message.includes('email not confirmed')) setError('Please confirm your email address before signing in.')
+        else if (message.includes('already registered') || message.includes('already been registered')) setError('An account with this email already exists. Try signing in instead.')
+        else if (message.includes('password')) setError('Password must be at least 8 characters.')
+        else setError(result.error.message || 'We could not complete that request. Please try again.')
+        setPending(false)
+        return
+      }
+      if (isSignUp && !result.data.session) {
+        setError('Account created. Check your email to confirm your account, then sign in.')
+        setPending(false)
+        return
+      }
+      router.replace('/')
+      router.refresh()
+    } catch {
+      setError('Authentication service is temporarily unavailable. Please try again.')
       setPending(false)
-      return
     }
-    router.push('/')
-    router.refresh()
   }
 
   return <form className="auth-form" onSubmit={submit}>
