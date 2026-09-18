@@ -47,6 +47,8 @@ export function WalletDashboard({ notify }: { notify: (message: string) => void 
         const depositAmount = Math.round(Number(form.amount || 0) * 100)
         if (!Number.isFinite(depositAmount) || depositAmount <= 0) throw new Error('Enter a valid deposit amount.')
         if (!form.paymentAccountId) throw new Error('Please select a deposit method.')
+        if (form.senderName.trim().length < 2) throw new Error('Enter the sender name used for the transfer.')
+        if (form.transferReference.trim().length < 4) throw new Error('Transfer reference must be at least 4 characters.')
         if (!proofFile) throw new Error('Please upload your payment proof.')
         const proofPathname = await uploadDepositProof(proofFile)
         await submitWalletDeposit({ amountMinor: depositAmount, paymentAccountId: form.paymentAccountId, senderName: form.senderName, transferReference: form.transferReference, proofPathname })

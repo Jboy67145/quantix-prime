@@ -40,6 +40,7 @@ export async function requireAdminUser() {
   const user = await requireUser()
   const supabase = await createClient()
   const { data: profile } = await supabase.from('user').select('id, role, email').eq('id', user.id).maybeSingle()
-  if (!profile || String(profile.role).toUpperCase() !== 'ADMIN') throw new Error('Forbidden')
+  const role = String(profile?.role || user.app_metadata?.role || '').toUpperCase()
+  if (!profile || !['ADMIN', 'SUPER_ADMIN'].includes(role)) throw new Error('Forbidden')
   return { user, profile }
 }
