@@ -60,7 +60,7 @@ export async function getReferralSnapshot() {
   if (!userId) return { profile: null, referrals: [], earned: 0, pending: 0, link: '' }
   const supabase = await createClient()
   const [{ data: profile }, { data: referrals }] = await Promise.all([
-    supabase.from('profiles').select('username, invite_code').eq('id', userId).maybeSingle(),
+    supabase.from('user').select('username, invite_code').eq('id', userId).maybeSingle(),
     supabase.from('quantix_referrals').select('*').eq('referrer_user_id', userId).order('created_at', { ascending: false }),
   ])
   const rows = referrals ?? []
@@ -105,7 +105,7 @@ export async function requestWithdrawal(input: { payoutAccountId: string; amount
   const now = new Date().toISOString()
   const { data: reserved, error: reserveError } = await supabase.from('quantix_wallets').update({ available_minor: Number(wallet.available_minor) - data.amountMinor, updated_at: now }).eq('user_id', userId).eq('available_minor', wallet.available_minor).select('user_id').maybeSingle()
   if (reserveError || !reserved) throw new Error('Insufficient funds. Your balance changed; please try again.')
-  const { data: request, error } = await supabase.from('quantix_withdrawals').insert({ user_id: userId, payout_account_id: account.id, amount_minor: data.amountMinor, fee_minor: feeMinor, net_minor: data.amountMinor - feeMinor, payout_account_snapshot: account, status: 'PENDING' }).select().single()
+  const { data: request, error } = await supabase.from('quantix_withdrawals').insert({ user_id: userId, amount_minor: data.amountMinor, fee_minor: feeMinor, net_minor: data.amountMinor - feeMinor, payout_account_snapshot: account, status: 'PENDING' }).select().single()
   if (error) {
     await supabase.from('quantix_wallets').update({ available_minor: Number(wallet.available_minor), updated_at: new Date().toISOString() }).eq('user_id', userId).eq('available_minor', Number(wallet.available_minor) - data.amountMinor)
     throw new Error('We couldn\'t process your withdrawal right now. Please try again.')
