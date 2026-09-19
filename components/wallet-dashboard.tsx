@@ -18,7 +18,7 @@ export function WalletDashboard({ notify }: { notify: (message: string) => void 
   const [withdrawalError, setWithdrawalError] = useState('')
   const [depositError, setDepositError] = useState('')
   const [form, setForm] = useState({ amount: '', payoutAccountId: '', paymentAccountId: '', senderName: '', transferReference: '', bankName: '', accountName: '', accountNumber: '' })
-  const refresh = () => getWalletDetails().then(setData).catch(() => notify('Unable to load wallet'))
+  const refresh = () => getWalletDetails().then(setData).catch((error) => notify(error instanceof Error ? error.message : 'Unable to load wallet'))
   useEffect(() => { refresh(); getPaymentAccounts().then(setFundingAccounts).catch(() => setDepositError('We could not load deposit accounts. Please try again.')) }, [])
   const available = Number(data.wallet?.available_minor || 0)
   const invested = Number(data.wallet?.invested_minor || 0)
