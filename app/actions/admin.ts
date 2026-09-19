@@ -25,7 +25,9 @@ export async function reviewDeposit(input: { id: string; status: 'APPROVED' | 'R
   if (error || !deposit) throw new Error('Deposit is no longer pending')
   if (input.status === 'APPROVED') {
     const { data: wallet } = await supabase.from('quantix_wallets').select('available_minor').eq('user_id', deposit.user_id).maybeSingle()
-    if (wallet) await supabase.from('quantix_wallets').update({ available_minor: Number(wallet.available_minor) + Number(deposit.amount_minor), updated_at: new Date().toISOString() }).eq('user_id', deposit.user_id)
+    if (!wallet) throw new Error('User wallet is missing; deposit approval was not completed.')
+    const { data: credited, error: creditError } = await supabase.from('quantix_wallets').update({ available_minor: Number(wallet.available_minor) + Number(deposit.amount_minor), updated_at: new Date().toISOString() }).eq('user_id', deposit.user_id).eq('available_minor', wallet.available_minor).select('user_id').maybeSingle()
+    if (creditError || !credited) throw new Error('Wallet changed while approving deposit. Please retry.')
     await supabase.from('quantix_ledger_entries').upsert({ user_id: deposit.user_id, amount_minor: deposit.amount_minor, direction: 'CREDIT', type: 'DEPOSIT', reference: `deposit:${deposit.id}`, status: 'POSTED', metadata: { paymentAccountId: deposit.payment_account_id } }, { onConflict: 'reference', ignoreDuplicates: true })
   }
   await createUserNotification({ userId: deposit.user_id, title: input.status === 'APPROVED' ? 'Deposit approved' : 'Deposit rejected', body: input.status === 'APPROVED' ? 'Your wallet has been credited with the approved deposit amount.' : (input.reason?.trim() || 'Your deposit proof was rejected.'), type: 'DEPOSIT' })

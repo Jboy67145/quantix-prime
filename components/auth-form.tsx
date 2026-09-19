@@ -14,6 +14,8 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resendMessage, setResendMessage] = useState('')
   const isSignUp = mode === 'sign-up'
   useEffect(() => { if (isSignUp) setReferralCode(new URLSearchParams(window.location.search).get('ref') || '') }, [isSignUp])
 
@@ -48,12 +50,24 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
     }
   }
 
+  async function resendVerification() {
+    setResending(true); setResendMessage(''); setError('')
+    try {
+      const response = await fetch('/api/auth/resend-confirmation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Unable to resend verification email.')
+      setResendMessage('Verification email sent. Check your inbox and spam folder.')
+    } catch (error) { setError(error instanceof Error ? error.message : 'Unable to resend verification email.') } finally { setResending(false) }
+  }
+
   return <form className="auth-form" onSubmit={submit}>
     {isSignUp && <><label>Username<input autoComplete="username" pattern="[A-Za-z0-9_]{3,24}" minLength={3} maxLength={24} value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} placeholder="e.g. japhet_prime" required /></label><label>Full name<input autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required /></label></>}
     <label>Email address<input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
     <label>Password<input type="password" minLength={8} autoComplete={isSignUp ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
     {error && <p className="auth-error" role="alert">{error}</p>}
+    {resendMessage && <p className="auth-success" role="status">{resendMessage}</p>}
     <button className="primary-button full" disabled={pending}>{pending ? 'Please wait…' : isSignUp ? 'Create account' : 'Sign in securely'}</button>
+    {!isSignUp && <button type="button" className="auth-link" disabled={resending || !email} onClick={resendVerification}>{resending ? 'Sending verification email…' : 'Resend verification email'}</button>}
     {!isSignUp && <Link className="auth-link auth-forgot" href="/forgot-password">Forgot password?</Link>}
   </form>
 }

@@ -60,7 +60,7 @@ export async function getReferralSnapshot() {
   if (!userId) return { profile: null, referrals: [], earned: 0, pending: 0, link: '' }
   const supabase = await createClient()
   const [{ data: profile }, { data: referrals }] = await Promise.all([
-    supabase.from('profiles').select('username, invite_code').eq('id', userId).maybeSingle(),
+    supabase.from('user').select('username, invite_code').eq('id', userId).maybeSingle(),
     supabase.from('quantix_referrals').select('*').eq('referrer_user_id', userId).order('created_at', { ascending: false }),
   ])
   const rows = referrals ?? []
@@ -142,11 +142,13 @@ export async function submitWalletDeposit(input: z.input<typeof walletDepositSch
 export async function getWalletDetails() {
   const userId = await getUserId()
   const supabase = await createClient()
-  const [{ data: wallet }, { data: deposits }, { data: withdrawals }, { data: accounts }] = await Promise.all([
+  const [walletResult, depositsResult, withdrawalsResult, accountsResult] = await Promise.all([
     supabase.from('quantix_wallets').select('*').eq('user_id', userId).maybeSingle(),
     supabase.from('quantix_deposits').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
     supabase.from('quantix_withdrawals').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
     supabase.from('quantix_payout_accounts').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
   ])
-  return { wallet, deposits: deposits ?? [], withdrawals: withdrawals ?? [], accounts: accounts ?? [] }
+  const failed = [walletResult.error, depositsResult.error, withdrawalsResult.error, accountsResult.error].find(Boolean)
+  if (failed) throw new Error(`Unable to load wallet data: ${failed.message}`)
+  return { wallet: walletResult.data, deposits: depositsResult.data ?? [], withdrawals: withdrawalsResult.data ?? [], accounts: accountsResult.data ?? [] }
 }

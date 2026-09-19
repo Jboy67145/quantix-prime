@@ -32,8 +32,8 @@ const FUNDING_ACCOUNTS = [
 export async function getPaymentAccounts() {
   const supabase = await createClient()
   const { data, error } = await supabase.from('quantix_payment_accounts').select('*').eq('active', true).order('display_order', { ascending: true })
-  if (error) throw new Error('Unable to load deposit accounts. Please refresh and try again.')
-  return data ?? []
+  if (error || !data?.length) return FUNDING_ACCOUNTS
+  return data
 }
 
 const purchaseSchema = z.object({ planId: z.string().uuid() })
