@@ -105,7 +105,7 @@ export async function requestWithdrawal(input: { payoutAccountId: string; amount
   const now = new Date().toISOString()
   const { data: reserved, error: reserveError } = await supabase.from('quantix_wallets').update({ available_minor: Number(wallet.available_minor) - data.amountMinor, updated_at: now }).eq('user_id', userId).eq('available_minor', wallet.available_minor).select('user_id').maybeSingle()
   if (reserveError || !reserved) throw new Error('Insufficient funds. Your balance changed; please try again.')
-  const { data: request, error } = await supabase.from('quantix_withdrawals').insert({ user_id: userId, amount_minor: data.amountMinor, fee_minor: feeMinor, net_minor: data.amountMinor - feeMinor, payout_account_snapshot: account, status: 'PENDING' }).select().single()
+  const { data: request, error } = await supabase.from('quantix_withdrawals').insert({ user_id: userId, payout_account_id: account.id, amount_minor: data.amountMinor, fee_minor: feeMinor, net_minor: data.amountMinor - feeMinor, payout_account_snapshot: account, status: 'PENDING' }).select().single()
   if (error) {
     await supabase.from('quantix_wallets').update({ available_minor: Number(wallet.available_minor), updated_at: new Date().toISOString() }).eq('user_id', userId).eq('available_minor', Number(wallet.available_minor) - data.amountMinor)
     throw new Error('We couldn\'t process your withdrawal right now. Please try again.')
