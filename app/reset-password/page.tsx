@@ -20,10 +20,16 @@ export default function ResetPasswordPage() {
     if (password !== confirmation) return setError('The passwords do not match.')
     setPending(true)
     setError('')
-    const result = await updatePassword(password)
-    if (result.error) { setError('This reset link is invalid or expired. Request a new one.'); setPending(false); return }
-    router.replace('/?reset=success')
-    router.refresh()
+    try {
+      const result = await updatePassword(password)
+      if (result.error) { setError('This reset link is invalid or expired. Request a new one.'); return }
+      router.replace('/?reset=success')
+      router.refresh()
+    } catch {
+      setError('The password service is temporarily unavailable. Request a new reset link and try again.')
+    } finally {
+      setPending(false)
+    }
   }
 
   return <main className="auth-shell"><div className="auth-panel"><div className="brand-lockup"><div className="brand-mark">Q</div><div><strong>quantix</strong><span>PRIME</span></div></div><p className="eyebrow">Secure account recovery</p><h1>Choose a new password</h1><p className="auth-copy">{ready ? 'Set a new password for your Quantix Prime account.' : 'Verifying your secure reset link…'}</p><form className="auth-form" onSubmit={submit}><label>New password<input type="password" autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required /></label><label>Confirm new password<input type="password" autoComplete="new-password" minLength={8} value={confirmation} onChange={(event) => setConfirmation(event.target.value)} required /></label>{error && <p className="auth-error" role="alert">{error}</p>}<button className="primary-button full" disabled={pending || !ready}>{pending ? 'Updating password…' : 'Update password'}</button></form><p className="auth-switch"><Link href="/sign-in">Return to sign in</Link></p></div></main>

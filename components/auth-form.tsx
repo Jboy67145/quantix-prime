@@ -61,7 +61,7 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   }
 
   return <form className="auth-form" onSubmit={submit}>
-    {isSignUp && <><label>Username<input autoComplete="username" pattern="[A-Za-z0-9_]{3,24}" minLength={3} maxLength={24} value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} placeholder="e.g. japhet_prime" required /></label><label>Full name<input autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required /></label></>}
+    {isSignUp && <><label>Username<input autoComplete="username" pattern="[A-Za-z0-9_]{3,24}" minLength={3} maxLength={24} value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} placeholder="e.g. japhet_prime" required /></label><label>Full name<input autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required /></label><label>Referral code <span className="muted">(optional)</span><input autoComplete="off" value={referralCode} onChange={(e) => setReferralCode(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} placeholder="Enter a referral code" maxLength={32} /></label></>}
     <label>Email address<input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
     <label>Password<input type="password" minLength={8} autoComplete={isSignUp ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
     {error && <p className="auth-error" role="alert">{error}</p>}

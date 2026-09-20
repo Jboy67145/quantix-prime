@@ -6,7 +6,8 @@ export async function GET(request: Request) {
   const code = url.searchParams.get('code')
   if (code) {
     const supabase = await createClient()
-    await supabase.auth.exchangeCodeForSession(code)
+    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+    if (exchangeError) return NextResponse.redirect(new URL('/sign-in?error=confirmation', request.url))
     const { data: authData } = await supabase.auth.getUser()
     const user = authData.user
     const referralCode = typeof user?.user_metadata?.referralCode === 'string' ? user.user_metadata.referralCode.trim().toLowerCase() : ''
