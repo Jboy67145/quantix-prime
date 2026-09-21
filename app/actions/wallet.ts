@@ -60,7 +60,7 @@ export async function getReferralSnapshot() {
   if (!userId) return { profile: null, referrals: [], earned: 0, pending: 0, link: '' }
   const supabase = await createClient()
   const [{ data: profile }, { data: referrals }] = await Promise.all([
-    supabase.from('user').select('username, invite_code').eq('id', userId).maybeSingle(),
+    supabase.from('profiles').select('username, invite_code').eq('id', userId).maybeSingle(),
     supabase.from('quantix_referrals').select('*').eq('referrer_user_id', userId).order('created_at', { ascending: false }),
   ])
   const rows = referrals ?? []
