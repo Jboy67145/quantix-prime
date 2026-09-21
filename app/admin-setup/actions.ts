@@ -11,9 +11,9 @@ function getAdminClient() {
 }
 
 export async function provisionInitialAdmin(email: string, password: string, setupSecret: string) {
-  const configuredEmail = process.env.INITIAL_ADMIN_EMAIL?.trim().toLowerCase()
+  const configuredEmail = process.env.INITIAL_ADMIN_EMAIL?.trim().toLowerCase().replace(/\.com\.com$/i, '.com')
   const configuredSecret = process.env.INITIAL_ADMIN_SETUP_SECRET?.trim()
-  const normalizedEmail = email.trim().toLowerCase()
+  const normalizedEmail = email.trim().toLowerCase().replace(/\.com\.com$/i, '.com')
   if (!configuredEmail || !configuredSecret) throw new Error('Initial administrator setup is not configured.')
   if (setupSecret !== configuredSecret || normalizedEmail !== configuredEmail) throw new Error('The administrator email or setup secret is invalid.')
   if (password.length < 8) throw new Error('Password must be at least 8 characters.')
@@ -21,6 +21,7 @@ export async function provisionInitialAdmin(email: string, password: string, set
   const admin = getAdminClient()
   const { data: existingAdmins, error: adminListError } = await admin.from('profiles').select('id').in('role', ['ADMIN', 'SUPER_ADMIN']).limit(1)
   if (adminListError) throw new Error('Unable to verify administrator setup status.')
+  if ((existingAdmins?.length || 0) >= 3) throw new Error('The maximum of three administrator accounts has already been reached.')
   if (existingAdmins?.length) throw new Error('Administrator setup has already been completed.')
 
   const { data: users, error: usersError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
