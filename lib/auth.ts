@@ -44,3 +44,10 @@ export async function requireAdminUser() {
   if (!profile || !['ADMIN', 'SUPER_ADMIN'].includes(role)) throw new Error('Forbidden')
   return { user, profile }
 }
+
+export async function requireSuperAdminUser() {
+  const { user, profile } = await requireAdminUser()
+  const role = String(profile.role || user.app_metadata?.role || '').toUpperCase()
+  if (role !== 'SUPER_ADMIN' && !ADMIN_EMAIL_ALLOWLIST.has(user.email?.toLowerCase() || '')) throw new Error('Super-admin access required')
+  return { user, profile }
+}
