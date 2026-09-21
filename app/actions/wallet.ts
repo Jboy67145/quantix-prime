@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUser } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
+import { getAppUrl } from '@/lib/env'
 import { put } from '@vercel/blob'
 import { createUserNotification } from '@/app/actions/notifications'
 
@@ -64,7 +65,7 @@ export async function getReferralSnapshot() {
     supabase.from('quantix_referrals').select('*').eq('referrer_user_id', userId).order('created_at', { ascending: false }),
   ])
   const rows = referrals ?? []
-  return { profile, referrals: rows, earned: rows.filter((row) => row.status === 'QUALIFIED').reduce((sum, row) => sum + Number(row.reward_minor), 0), pending: rows.filter((row) => row.status !== 'QUALIFIED').reduce((sum, row) => sum + Number(row.reward_minor), 0), link: profile?.username ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/sign-up?ref=${encodeURIComponent(profile.username)}` : '' }
+  return { profile, referrals: rows, earned: rows.filter((row) => row.status === 'QUALIFIED').reduce((sum, row) => sum + Number(row.reward_minor), 0), pending: rows.filter((row) => row.status !== 'QUALIFIED').reduce((sum, row) => sum + Number(row.reward_minor), 0), link: profile?.username ? `${getAppUrl()}/sign-up?ref=${encodeURIComponent(profile.username)}` : '' }
 }
 
 const payoutSchema = z.object({ bankName: z.string().trim().min(2).max(80), accountName: z.string().trim().min(2).max(120), accountNumber: z.string().regex(/^\d{10}$/) })
