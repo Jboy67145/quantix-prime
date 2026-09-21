@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { getAppUrl, getSupabasePublicConfig } from '@/lib/env'
 
-export async function POST() {
+export async function POST(request: Request) {
   const { email } = await request.json().catch(() => ({}))
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
   if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return Response.json({ error: 'Enter a valid email address.' }, { status: 400 })
