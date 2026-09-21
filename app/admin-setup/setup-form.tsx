@@ -6,7 +6,7 @@ import { provisionInitialAdmin } from './actions'
 
 export function AdminSetupForm({ initialEmail }: { initialEmail: string }) {
   const router = useRouter()
-  const [email] = useState(initialEmail)
+  const [email, setEmail] = useState(initialEmail)
   const [password, setPassword] = useState('')
   const [setupSecret, setSetupSecret] = useState('')
   const [pending, setPending] = useState(false)
