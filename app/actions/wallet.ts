@@ -90,28 +90,41 @@ export async function getUserPayoutAccounts() {
 
 export async function requestWithdrawal(input: { payoutAccountId: string; amountMinor: number }) {
   const userId = await getUserId()
-  const parsed = z.object({ payoutAccountId: z.string().uuid(), amountMinor: z.number().int().positive('Withdrawal amount must be greater than ₦0.') }).safeParse(input)
+  const parsed = z.object({
+    payoutAccountId: z.string().uuid(),
+    amountMinor: z.number().int().positive('Withdrawal amount must be greater than ₦0.'),
+  }).safeParse(input)
   if (!parsed.success) throw new Error('Enter a valid withdrawal amount.')
   const data = parsed.data
   const supabase = await createClient()
-  const { data: settings } = await supabase.from('quantix_withdrawal_settings').select('*').limit(1).maybeSingle()
-  if (settings?.enabled && data.amountMinor < Number(settings.minimum_minor)) throw new Error(`Minimum withdrawal amount is ${moneyMinor(Number(settings.minimum_minor))}.`)
-  if (settings?.enabled && settings.maximum_minor && data.amountMinor > Number(settings.maximum_minor)) throw new Error(`Maximum withdrawal amount is ${moneyMinor(Number(settings.maximum_minor))}.`)
-  const { data: account } = await supabase.from('quantix_payout_accounts').select('*').eq('id', data.payoutAccountId).eq('user_id', userId).maybeSingle()
-  if (!account) throw new Error('Please add and select a payout account before withdrawing.')
-  const { data: wallet } = await supabase.from('quantix_wallets').select('available_minor').eq('user_id', userId).maybeSingle()
-  if (!wallet || Number(wallet.available_minor) < data.amountMinor) throw new Error(wallet ? `Insufficient funds. You can withdraw up to ${moneyMinor(Number(wallet.available_minor))}.` : 'Insufficient funds. Your available balance is ₦0.00.')
-  const feeMinor = Math.round(data.amountMinor * 0.01)
-  const now = new Date().toISOString()
-  const { data: reserved, error: reserveError } = await supabase.from('quantix_wallets').update({ available_minor: Number(wallet.available_minor) - data.amountMinor, updated_at: now }).eq('user_id', userId).eq('available_minor', wallet.available_minor).select('user_id').maybeSingle()
-  if (reserveError || !reserved) throw new Error('Insufficient funds. Your balance changed; please try again.')
-  const { data: request, error } = await supabase.from('quantix_withdrawals').insert({ user_id: userId, payout_account_id: account.id, amount_minor: data.amountMinor, fee_minor: feeMinor, net_minor: data.amountMinor - feeMinor, payout_account_snapshot: account, status: 'PENDING' }).select().single()
-  if (error) {
-    await supabase.from('quantix_wallets').update({ available_minor: Number(wallet.available_minor), updated_at: new Date().toISOString() }).eq('user_id', userId).eq('available_minor', Number(wallet.available_minor) - data.amountMinor)
-    throw new Error('We couldn\'t process your withdrawal right now. Please try again.')
+
+  const { data: settings, error: settingsError } = await supabase
+    .from('quantix_withdrawal_settings')
+    .select('*')
+    .limit(1)
+    .maybeSingle()
+  if (settingsError) throw new Error('Unable to load withdrawal settings.')
+  if (settings?.enabled && data.amountMinor < Number(settings.minimum_minor)) {
+    throw new Error(`Minimum withdrawal amount is ${moneyMinor(Number(settings.minimum_minor))}.`)
   }
-  await supabase.from('quantix_ledger_entries').insert({ user_id: userId, amount_minor: data.amountMinor, direction: 'DEBIT', type: 'WITHDRAWAL', reference: `WDR-${request.id}`, status: 'PENDING', metadata: { withdrawalId: request.id } })
-  await createUserNotification({ userId, title: 'Withdrawal submitted', body: `Your withdrawal request for ${moneyMinor(data.amountMinor)} is pending admin processing.`, type: 'WITHDRAWAL' })
+  if (settings?.enabled && settings.maximum_minor && data.amountMinor > Number(settings.maximum_minor)) {
+    throw new Error(`Maximum withdrawal amount is ${moneyMinor(Number(settings.maximum_minor))}.`)
+  }
+
+  const { data: request, error } = await supabase.rpc('request_withdrawal_atomic', {
+    p_payout_account_id: data.payoutAccountId,
+    p_amount_minor: data.amountMinor,
+  })
+  if (error || !request) {
+    throw new Error(error?.message || 'We could not process your withdrawal right now. Please try again.')
+  }
+
+  await createUserNotification({
+    userId,
+    title: 'Withdrawal submitted',
+    body: `Your withdrawal request for ${moneyMinor(data.amountMinor)} is pending admin processing.`,
+    type: 'WITHDRAWAL',
+  })
   revalidatePath('/')
   return request
 }
