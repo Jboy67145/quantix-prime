@@ -1,0 +1,4 @@
+import Link from 'next/link'
+export default function AuthCodeErrorPage() {
+  return <main className="auth-shell"><div className="auth-panel"><div className="brand-lockup"><div className="brand-mark">Q</div><div><strong>quantix</strong><span>PRIME</span></div></div><p className="eyebrow">Secure authentication</p><h1>Link expired or invalid</h1><p className="auth-copy">This authentication link has expired, already been used, or is no longer valid. Request a new email and try again.</p><Link className="primary-button full" href="/forgot-password">Request a new link</Link><p className="auth-switch"><Link href="/sign-in">Back to sign in</Link></p></div></main>
+}
