@@ -5,7 +5,7 @@ import { Bell, Check, Copy, Gift, Home as HomeIcon, LogOut, Moon, ShieldCheck, S
 import { useRouter } from 'next/navigation'
 import { signOut } from '@/lib/auth-client'
 import { getPublicPlans, purchaseInvestment, getUserInvestments } from '@/app/actions/investments'
-import { getInvestedPlanIds, getWalletSnapshot, getReferralSnapshot, getUserPayoutAccounts, addPayoutAccount, deletePayoutAccount } from '@/app/actions/wallet'
+import { getWalletSnapshot, getReferralSnapshot, getUserPayoutAccounts, addPayoutAccount, deletePayoutAccount } from '@/app/actions/wallet'
 import { getOpenDraws, joinDraw, claimReward } from '@/app/actions/lucky'
 import { getNotifications, markNotificationRead } from '@/app/actions/notifications'
 import { WalletDashboard } from '@/components/wallet-dashboard'
