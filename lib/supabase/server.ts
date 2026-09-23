@@ -8,6 +8,6 @@ export async function createClient() {
   return createServerClient(
     url,
     key,
-    { cookies: { getAll: () => cookieStore.getAll(), setAll: (cookiesToSet) => { try { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) } catch {} } } },
+    { cookies: { getAll: () => cookieStore.getAll(), setAll: (cookiesToSet) => { for (const { name, value, options } of cookiesToSet) { cookieStore.set(name, value, options) } } } },
   )
 }

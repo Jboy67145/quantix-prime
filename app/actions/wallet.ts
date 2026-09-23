@@ -5,7 +5,6 @@ import { z } from 'zod'
 import { getCurrentUser } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { getAppUrl } from '@/lib/env'
-import { put } from '@vercel/blob'
 import { createUserNotification } from '@/app/actions/notifications'
 
 async function getUserId() {
@@ -122,8 +121,13 @@ function moneyMinor(minor: number) { return `₦${(minor / 100).toLocaleString('
 export async function uploadDepositProof(file: File) {
   const userId = await getUserId()
   if (!file || file.size > 5 * 1024 * 1024 || !['image/jpeg', 'image/png', 'application/pdf'].includes(file.type)) throw new Error('Upload a JPG, PNG, or PDF proof under 5MB')
-  const blob = await put(`deposit-proofs/${userId}/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`, file, { access: 'private' })
-  return blob.pathname
+  const extension = file.name.split('.').pop()?.toLowerCase() || 'bin'
+  const safeName = `${crypto.randomUUID()}.${extension}`
+  const path = `${userId}/${safeName}`
+  const supabase = await createClient()
+  const { error } = await supabase.storage.from('deposit-proofs').upload(path, file, { contentType: file.type, upsert: false })
+  if (error) throw new Error('Unable to upload payment proof. Please try again.')
+  return path
 }
 
 const walletDepositSchema = z.object({ amountMinor: z.number().int().positive().max(100_000_000_000), paymentAccountId: z.string().uuid(), transferReference: z.string().trim().min(4).max(120), senderName: z.string().trim().min(2).max(120), proofPathname: z.string().trim().min(1).max(500) })
@@ -135,7 +139,10 @@ export async function submitWalletDeposit(input: z.input<typeof walletDepositSch
   const { data: account, error: accountError } = await supabase.from('quantix_payment_accounts').select('id').eq('id', data.paymentAccountId).eq('active', true).maybeSingle()
   if (accountError || !account) throw new Error('Funding account is not available. Please refresh and select an active account.')
   const { data: deposit, error } = await supabase.from('quantix_deposits').insert({ user_id: userId, amount_minor: data.amountMinor, payment_account_id: data.paymentAccountId, transfer_reference: data.transferReference, sender_name: data.senderName, proof_url: data.proofPathname, payment_proof_name: data.proofPathname.split('/').pop(), status: 'PENDING' }).select().single()
-  if (error) throw new Error('Unable to submit deposit proof')
+  if (error) {
+    await supabase.storage.from('deposit-proofs').remove([data.proofPathname])
+    throw new Error('Unable to submit deposit proof')
+  }
   revalidatePath('/')
   return deposit
 }
