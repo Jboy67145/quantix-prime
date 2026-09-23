@@ -48,7 +48,7 @@ export async function updateWithdrawalSettings(input: { timezone: string; enable
 }
 
 export async function reviewWithdrawal(id: string, status: 'APPROVED' | 'REJECTED', adminNote?: string) {
-  const actorId = await requireAdmin()
+  await requireAdmin()
   const supabase = await createClient()
   const note = adminNote?.trim() || null
   const { data: item, error } = await supabase.rpc('review_withdrawal_atomic', {
@@ -58,21 +58,16 @@ export async function reviewWithdrawal(id: string, status: 'APPROVED' | 'REJECTE
   })
   if (error || !item) throw new Error(error?.message || 'Withdrawal is no longer pending')
 
-  await createUserNotification({
-    userId: item.user_id,
-    title: status === 'APPROVED' ? 'Withdrawal approved' : 'Withdrawal rejected',
-    body: note || `Your withdrawal request is ${status.toLowerCase()}.`,
-    type: 'WITHDRAWAL',
-  })
-  await supabase.from('quantix_audit_logs').insert({
-    actor_id: actorId,
-    actor_role: 'ADMIN',
-    action: `WITHDRAWAL_${status}`,
-    target_type: 'WITHDRAWAL',
-    target_id: id,
-    reason: note,
-    after_state: item,
-  })
+  try {
+    await createUserNotification({
+      userId: item.user_id,
+      title: status === 'APPROVED' ? 'Withdrawal approved' : 'Withdrawal rejected',
+      body: note || `Your withdrawal request is ${status.toLowerCase()}.`,
+      type: 'WITHDRAWAL',
+    })
+  } catch (notificationError) {
+    console.error('Withdrawal notification failed', notificationError)
+  }
   revalidatePath('/admin')
   return item
 }
