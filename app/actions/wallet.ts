@@ -58,9 +58,9 @@ export async function addPayoutAccount(input: z.input<typeof payoutSchema>) {
   const userId = await getUserId()
   const data = payoutSchema.parse(input)
   const supabase = await createClient()
-  const { count } = await supabase.from('quantix_payout_accounts').select('id', { count: 'exact', head: true }).eq('user_id', userId)
+  const { count } = await supabase.from('quantix_payout_accounts').select('id', { count: 'exact', head: true }).eq('user_id', userId).is('deleted_at', null)
   if ((count ?? 0) >= 2) throw new Error('You can save up to two payout accounts')
-  const { data: account, error } = await supabase.from('quantix_payout_accounts').insert({ user_id: userId, bank_name: data.bankName, account_name: data.accountName, account_number: data.accountNumber, is_default: (count ?? 0) === 0 }).select().single()
+  const { data: account, error } = await supabase.from('quantix_payout_accounts').insert({ user_id: userId, bank_name: data.bankName, account_name: data.accountName, account_number: data.accountNumber, is_default: (count ?? 0) === 0, deleted_at: null }).select().single()
   if (error) throw new Error('Unable to save payout account')
   revalidatePath('/')
   return account
@@ -70,9 +70,42 @@ export async function getUserPayoutAccounts() {
   const userId = await getOptionalUserId()
   if (!userId) return []
   const supabase = await createClient()
-  const { data, error } = await supabase.from('quantix_payout_accounts').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+  const { data, error } = await supabase.from('quantix_payout_accounts').select('*').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false })
   if (error) throw new Error('Unable to load payout accounts')
   return data ?? []
+}
+
+export async function deletePayoutAccount(accountId: string) {
+  const userId = await getUserId()
+  if (!z.string().uuid().safeParse(accountId).success) throw new Error('Invalid payout account.')
+  const supabase = await createClient()
+  const { data: account, error: accountError } = await supabase
+    .from('quantix_payout_accounts')
+    .select('id, user_id, is_default, deleted_at')
+    .eq('id', accountId)
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (accountError || !account) throw new Error('Payout account not found.')
+  const { error } = await supabase
+    .from('quantix_payout_accounts')
+    .update({ deleted_at: new Date().toISOString(), is_default: false })
+    .eq('id', accountId)
+    .eq('user_id', userId)
+  if (error) throw new Error('Unable to remove payout account.')
+  if (account.is_default) {
+    const { data: replacement } = await supabase
+      .from('quantix_payout_accounts')
+      .select('id')
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    if (replacement) await supabase.from('quantix_payout_accounts').update({ is_default: true }).eq('id', replacement.id).eq('user_id', userId)
+  }
+  revalidatePath('/')
+  return { ok: true }
 }
 
 export async function requestWithdrawal(input: { payoutAccountId: string; amountMinor: number }) {
@@ -154,7 +187,7 @@ export async function getWalletDetails() {
     supabase.from('quantix_wallets').select('*').eq('user_id', userId).maybeSingle(),
     supabase.from('quantix_deposits').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
     supabase.from('quantix_withdrawals').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
-    supabase.from('quantix_payout_accounts').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+    supabase.from('quantix_payout_accounts').select('*').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }),
   ])
   const failed = [walletResult.error, depositsResult.error, withdrawalsResult.error, accountsResult.error].find(Boolean)
   if (failed) throw new Error(`Unable to load wallet data: ${failed.message}`)
