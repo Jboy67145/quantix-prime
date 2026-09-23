@@ -41,27 +41,6 @@ export async function getInvestedPlanIds() {
   return (data ?? []).map((row) => row.plan_id)
 }
 
-export async function processMaturities() {
-  const supabase = await createClient()
-  const { data: due, error } = await supabase
-    .from('quantix_investments')
-    .select('id')
-    .eq('status', 'ACTIVE')
-    .lte('matures_at', new Date().toISOString())
-  if (error) throw new Error('Unable to load maturities')
-
-  let processed = 0
-  for (const investment of due ?? []) {
-    const { data, error: processError } = await supabase.rpc('process_maturity_atomic', {
-      p_investment_id: investment.id,
-    })
-    if (processError) throw new Error('Unable to process maturity')
-    if (data) processed += 1
-  }
-  revalidatePath('/')
-  return processed
-}
-
 export async function getReferralSnapshot() {
   const userId = await getOptionalUserId()
   if (!userId) return { profile: null, referrals: [], earned: 0, pending: 0, link: '' }
