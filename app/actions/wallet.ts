@@ -88,7 +88,8 @@ export async function addPayoutAccount(input: z.input<typeof payoutSchema>) {
 }
 
 export async function getUserPayoutAccounts() {
-  const userId = await getUserId()
+  const userId = await getOptionalUserId()
+  if (!userId) return []
   const supabase = await createClient()
   const { data, error } = await supabase.from('quantix_payout_accounts').select('*').eq('user_id', userId).order('created_at', { ascending: false })
   if (error) throw new Error('Unable to load payout accounts')
