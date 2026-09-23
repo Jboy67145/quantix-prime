@@ -28,15 +28,16 @@ export async function provisionInitialAdmin(email: string, password: string, set
   if (usersError) throw new Error(usersError.message)
   let authUser = users.users.find((candidate) => candidate.email?.toLowerCase() === normalizedEmail)
   if (!authUser) {
-    const { data, error } = await admin.auth.admin.createUser({ email: normalizedEmail, password, email_confirm: false, user_metadata: { full_name: 'Quantix Prime Administrator' } })
+    const { data, error } = await admin.auth.admin.createUser({ email: normalizedEmail, password, email_confirm: true, app_metadata: { role: 'SUPER_ADMIN' }, user_metadata: { full_name: 'Quantix Prime Administrator' } })
     if (error || !data.user) throw new Error(error?.message || 'Unable to create administrator account.')
     authUser = data.user
   }
 
-  const { error: metadataError } = await admin.auth.admin.updateUserById(authUser.id, { app_metadata: { ...(authUser.app_metadata || {}), role: 'SUPER_ADMIN' } })
-  if (metadataError) throw new Error(metadataError.message)
-  const { error: profileError } = await admin.from('profiles').upsert({ id: authUser.id, email: normalizedEmail, role: 'SUPER_ADMIN' }, { onConflict: 'id' })
+  const { data: activatedUser, error: metadataError } = await admin.auth.admin.updateUserById(authUser.id, { password, email_confirm: true, app_metadata: { ...(authUser.app_metadata || {}), role: 'SUPER_ADMIN' }, user_metadata: { ...(authUser.user_metadata || {}), full_name: authUser.user_metadata?.full_name || 'Quantix Prime Administrator' } })
+  if (metadataError || !activatedUser.user) throw new Error(metadataError?.message || 'Unable to activate administrator account.')
+  authUser = activatedUser.user
+  const { error: profileError } = await admin.from('profiles').upsert({ id: authUser.id, name: 'Quantix Prime Administrator', role: 'SUPER_ADMIN' }, { onConflict: 'id' })
   if (profileError) throw new Error(profileError.message)
   await admin.from('quantix_audit_logs').insert({ actor_id: authUser.id, actor_role: 'SUPER_ADMIN', action: 'INITIAL_ADMIN_PROVISIONED', target_type: 'PROFILE', target_id: authUser.id, after_state: { email: normalizedEmail, role: 'SUPER_ADMIN' } })
-  return { ok: true, emailConfirmed: Boolean(authUser.email_confirmed_at) }
+  return { ok: true, emailConfirmed: true }
 }
