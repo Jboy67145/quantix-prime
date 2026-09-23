@@ -12,15 +12,26 @@ async function getUserId() {
 }
 
 const STANDARD_PLANS = [
-  ['Quantix Swift Plan 1', 'DAILY', 1000000, 1000000, 15, 3], ['Quantix Swift Plan 2', 'DAILY', 2000000, 2000000, 20, 5], ['Quantix Swift Plan 3', 'WEEKLY', 3500000, 3500000, 23, 7], ['Quantix Swift Plan 4', 'WEEKLY', 5000000, 5000000, 30, 10], ['Quantix Prime Plan 1', 'WEEKLY', 7500000, 7500000, 40, 14], ['Quantix Prime Plan 2', 'WEEKLY', 10000000, 10000000, 50, 21], ['Quantix Prime Plan 3', 'MONTHLY', 15000000, 15000000, 67, 30], ['Quantix Prime Plan 4', 'MONTHLY', 25000000, 25000000, 100, 35], ['Quantix Prime Plan 5', 'MONTHLY', 35000000, 35000000, 129, 40], ['Quantix Elite Plan 1', 'MONTHLY', 50000000, 50000000, 170, 45], ['Quantix Elite Plan 2', 'MONTHLY', 75000000, 75000000, 240, 52], ['Quantix Elite Max', 'MONTHLY', 100000000, 100000000, 350, 60],
+  ['Starter Prime', 'DAILY', 1000000, 1150000, 100000, 3],
+  ['Mini Growth', 'DAILY', 1500000, 1800000, 150000, 5],
+  ['Bronze Growth', 'WEEKLY', 2500000, 3125000, 250000, 7],
+  ['Pioneer Vault', 'WEEKLY', 3500000, 4620000, 350000, 10],
+  ['Silver Vault', 'WEEKLY', 5000000, 7000000, 500000, 14],
+  ['Pro Vault', 'WEEKLY', 7500000, 11625000, 750000, 20],
+  ['Gold Vault', 'MONTHLY', 10000000, 18000000, 1000000, 30],
+  ['Master Growth', 'MONTHLY', 15000000, 29250000, 1500000, 35],
+  ['Platinum Vault', 'MONTHLY', 25000000, 56250000, 2000000, 45],
+  ['Diamond Executive', 'MONTHLY', 50000000, 150000000, 3500000, 60],
+  ['Titan Executive', 'MONTHLY', 75000000, 285000000, 4250000, 75],
+  ['Apex Prime', 'MONTHLY', 100000000, 450000000, 5000000, 90],
 ] as const
-const fallbackPlans = STANDARD_PLANS.map((p, index) => { const profit = Math.round(p[2] * p[4] / 100); return { id: `00000000-0000-0000-0000-${String(index + 11).padStart(12, '0')}`, name: p[0], description: `${p[1] === 'DAILY' ? 'Daily' : p[1] === 'WEEKLY' ? 'Weekly' : 'Monthly'} earnings plan`, category: p[1], minimumMinor: p[2], maximumMinor: p[3], totalEarningsMinor: p[2] + profit, dailyEarningsMinor: Math.round(profit / p[5]), durationDays: p[5], purchaseBonusMinor: 0, status: 'OPEN', returnBps: p[4] * 100 } })
+const fallbackPlans = STANDARD_PLANS.map((p, index) => { const profit = p[3] - p[2]; return { id: `00000000-0000-0000-0000-${String(index + 11).padStart(12, '0')}`, name: p[0], description: `${p[0]} investment plan`, category: p[1], minimumMinor: p[2], maximumMinor: p[2], totalEarningsMinor: p[3], dailyEarningsMinor: Math.round(profit / p[5]), durationDays: p[5], purchaseBonusMinor: p[4], status: 'OPEN', returnBps: Math.round((profit / p[2]) * 10000), displayOrder: index + 1 } })
 
 export async function getPublicPlans() {
   const supabase = await createClient()
   const { data, error } = await supabase.from('quantix_plans').select('*').eq('active', true).order('display_order', { ascending: true })
-  if (error) throw new Error('Unable to load investment plans. Please refresh and try again.')
-  return (data ?? []).map((plan: any) => { const profit = Math.round(Number(plan.minimum_minor) * Number(plan.return_bps || 0) / 10000); return { ...plan, minimumMinor: Number(plan.minimum_minor), maximumMinor: Number(plan.maximum_minor), durationDays: Number(plan.duration_days), totalEarningsMinor: Number(plan.minimum_minor) + profit, dailyEarningsMinor: Math.round(profit / Number(plan.duration_days)), purchaseBonusMinor: 0, status: plan.active ? 'OPEN' : 'CLOSED' } })
+  if (error || !data?.length) return fallbackPlans
+  return data.map((plan: any) => { const profit = Math.round(Number(plan.minimum_minor) * Number(plan.return_bps || 0) / 10000); return { ...plan, minimumMinor: Number(plan.minimum_minor), maximumMinor: Number(plan.maximum_minor), durationDays: Number(plan.duration_days), totalEarningsMinor: Number(plan.minimum_minor) + profit, dailyEarningsMinor: Math.round(profit / Number(plan.duration_days)), purchaseBonusMinor: Number(plan.purchase_bonus_minor || 0), status: plan.active ? 'OPEN' : 'CLOSED' } })
 }
 
 const FUNDING_ACCOUNTS = [
@@ -44,7 +55,7 @@ export async function purchaseInvestment(input: z.input<typeof purchaseSchema>) 
   const supabase = await createClient()
   const { data: storedPlan, error: planError } = await supabase.from('quantix_plans').select('*').eq('id', planId).eq('active', true).maybeSingle()
   if (planError || !storedPlan) throw new Error('This investment plan is unavailable. Please refresh and try again.')
-  const selected = { ...storedPlan, total_earnings_minor: Number(storedPlan.minimum_minor) + Math.round(Number(storedPlan.minimum_minor) * Number(storedPlan.return_bps || 0) / 10000), purchase_bonus_minor: 0 }
+  const selected = { ...storedPlan, total_earnings_minor: Number(storedPlan.minimum_minor) + Math.round(Number(storedPlan.minimum_minor) * Number(storedPlan.return_bps || 0) / 10000), purchase_bonus_minor: Number(storedPlan.purchase_bonus_minor || 0) }
   const principal = Number(selected.minimum_minor)
   const { data: wallet } = await supabase.from('quantix_wallets').select('*').eq('user_id', userId).maybeSingle()
   if (!wallet || Number(wallet.available_minor) < principal) throw new Error('Insufficient wallet balance. Please deposit funds before investing.')
