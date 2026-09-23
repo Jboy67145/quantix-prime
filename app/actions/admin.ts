@@ -49,3 +49,26 @@ export async function reviewDeposit(input: { id: string; status: 'APPROVED' | 'R
   revalidatePath('/admin')
   return deposit
 }
+
+
+const balanceAdjustmentSchema = z.object({
+  userId: z.string().uuid(),
+  amountMinor: z.number().int().refine((value) => value !== 0, 'Adjustment cannot be zero.').refine((value) => Math.abs(value) <= 100_000_000_000, 'Adjustment is too large.'),
+  reason: z.string().trim().min(3).max(500),
+  reference: z.string().trim().max(120).optional(),
+})
+
+export async function adjustUserBalance(input: z.input<typeof balanceAdjustmentSchema>) {
+  await getAdmin()
+  const data = balanceAdjustmentSchema.parse(input)
+  const supabase = await createClient()
+  const { data: result, error } = await supabase.rpc('admin_adjust_balance', {
+    p_user_id: data.userId,
+    p_amount_minor: data.amountMinor,
+    p_reason: data.reason,
+    p_reference: data.reference?.trim() || null,
+  })
+  if (error || !result) throw new Error(error?.message || 'Unable to adjust user balance')
+  revalidatePath('/admin')
+  return result
+}
