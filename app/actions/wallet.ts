@@ -187,7 +187,7 @@ export async function getWalletDetails() {
     supabase.from('quantix_wallets').select('*').eq('user_id', userId).maybeSingle(),
     supabase.from('quantix_deposits').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
     supabase.from('quantix_withdrawals').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
-    supabase.from('quantix_payout_accounts').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+    supabase.from('quantix_payout_accounts').select('*').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }),
   ])
   const failed = [walletResult.error, depositsResult.error, withdrawalsResult.error, accountsResult.error].find(Boolean)
   if (failed) throw new Error(`Unable to load wallet data: ${failed.message}`)
