@@ -167,7 +167,9 @@ const walletDepositSchema = z.object({ amountMinor: z.number().int().positive().
 
 export async function submitWalletDeposit(input: z.input<typeof walletDepositSchema>) {
   const userId = await getUserId()
-  const data = walletDepositSchema.parse(input)
+  const parsed = walletDepositSchema.safeParse(input)
+  if (!parsed.success) throw new Error('Deposit form is incomplete or stale. Refresh the page, select an active deposit account, and try again.')
+  const data = parsed.data
   const supabase = await createClient()
   const { data: account, error: accountError } = await supabase.from('quantix_payment_accounts').select('id').eq('id', data.paymentAccountId).eq('active', true).maybeSingle()
   if (accountError || !account) throw new Error('Funding account is not available. Please refresh and select an active account.')
