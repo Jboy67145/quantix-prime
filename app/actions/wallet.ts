@@ -171,10 +171,17 @@ export async function submitWalletDeposit(input: z.input<typeof walletDepositSch
   const supabase = await createClient()
   const { data: account, error: accountError } = await supabase.from('quantix_payment_accounts').select('id').eq('id', data.paymentAccountId).eq('active', true).maybeSingle()
   if (accountError || !account) throw new Error('Funding account is not available. Please refresh and select an active account.')
-  const { data: deposit, error } = await supabase.from('quantix_deposits').insert({ user_id: userId, amount_minor: data.amountMinor, payment_account_id: data.paymentAccountId, transfer_reference: data.transferReference, sender_name: data.senderName, proof_url: data.proofPathname, payment_proof_name: data.proofPathname.split('/').pop(), status: 'PENDING' }).select().single()
-  if (error) {
+  const { data: deposit, error } = await supabase.rpc('submit_deposit_atomic', {
+    p_amount_minor: data.amountMinor,
+    p_payment_account_id: data.paymentAccountId,
+    p_sender_name: data.senderName,
+    p_transfer_reference: data.transferReference,
+    p_proof_url: data.proofPathname,
+    p_payment_proof_name: data.proofPathname.split('/').pop(),
+  })
+  if (error || !deposit) {
     await supabase.storage.from('deposit-proofs').remove([data.proofPathname])
-    throw new Error('Unable to submit deposit proof')
+    throw new Error(error?.message || 'Unable to submit deposit proof')
   }
   revalidatePath('/')
   return deposit
