@@ -21,17 +21,31 @@ export async function getPendingDeposits() {
 export async function reviewDeposit(input: { id: string; status: 'APPROVED' | 'REJECTED'; reason?: string }) {
   const adminId = await getAdmin()
   const supabase = await createClient()
-  const { data: deposit, error } = await supabase.from('quantix_deposits').update({ status: input.status, admin_note: input.reason?.trim() || null, reviewed_at: new Date().toISOString() }).eq('id', input.id).eq('status', 'PENDING').select().maybeSingle()
-  if (error || !deposit) throw new Error('Deposit is no longer pending')
-  if (input.status === 'APPROVED') {
-    const { data: wallet } = await supabase.from('quantix_wallets').select('available_minor').eq('user_id', deposit.user_id).maybeSingle()
-    if (!wallet) throw new Error('User wallet is missing; deposit approval was not completed.')
-    const { data: credited, error: creditError } = await supabase.from('quantix_wallets').update({ available_minor: Number(wallet.available_minor) + Number(deposit.amount_minor), updated_at: new Date().toISOString() }).eq('user_id', deposit.user_id).eq('available_minor', wallet.available_minor).select('user_id').maybeSingle()
-    if (creditError || !credited) throw new Error('Wallet changed while approving deposit. Please retry.')
-    await supabase.from('quantix_ledger_entries').upsert({ user_id: deposit.user_id, amount_minor: deposit.amount_minor, direction: 'CREDIT', type: 'DEPOSIT', reference: `deposit:${deposit.id}`, status: 'POSTED', metadata: { paymentAccountId: deposit.payment_account_id } }, { onConflict: 'reference', ignoreDuplicates: true })
-  }
-  await createUserNotification({ userId: deposit.user_id, title: input.status === 'APPROVED' ? 'Deposit approved' : 'Deposit rejected', body: input.status === 'APPROVED' ? 'Your wallet has been credited with the approved deposit amount.' : (input.reason?.trim() || 'Your deposit proof was rejected.'), type: 'DEPOSIT' })
-  await supabase.from('quantix_audit_logs').insert({ actor_id: adminId, actor_role: 'ADMIN', action: `DEPOSIT_${input.status}`, target_type: 'DEPOSIT', target_id: input.id, reason: input.reason?.trim() || null, after_state: deposit })
+  const reason = input.reason?.trim() || null
+  const { data: deposit, error } = await supabase.rpc('review_deposit_atomic', {
+    p_deposit_id: input.id,
+    p_status: input.status,
+    p_reason: reason,
+  })
+  if (error || !deposit) throw new Error(error?.message || 'Deposit is no longer pending')
+
+  await createUserNotification({
+    userId: deposit.user_id,
+    title: input.status === 'APPROVED' ? 'Deposit approved' : 'Deposit rejected',
+    body: input.status === 'APPROVED'
+      ? 'Your wallet has been credited with the approved deposit amount.'
+      : (reason || 'Your deposit proof was rejected.'),
+    type: 'DEPOSIT',
+  })
+  await supabase.from('quantix_audit_logs').insert({
+    actor_id: adminId,
+    actor_role: 'ADMIN',
+    action: `DEPOSIT_${input.status}`,
+    target_type: 'DEPOSIT',
+    target_id: input.id,
+    reason,
+    after_state: deposit,
+  })
   revalidatePath('/admin')
   return deposit
 }
