@@ -43,16 +43,23 @@ export async function getInvestedPlanIds() {
 
 export async function processMaturities() {
   const supabase = await createClient()
-  const { data: due } = await supabase.from('quantix_investments').select('*').eq('status', 'ACTIVE').lte('matures_at', new Date().toISOString())
+  const { data: due, error } = await supabase
+    .from('quantix_investments')
+    .select('id')
+    .eq('status', 'ACTIVE')
+    .lte('matures_at', new Date().toISOString())
+  if (error) throw new Error('Unable to load maturities')
+
+  let processed = 0
   for (const investment of due ?? []) {
-    const { data: updated } = await supabase.from('quantix_investments').update({ status: 'MATURED', matured_at: new Date().toISOString() }).eq('id', investment.id).eq('status', 'ACTIVE').select('id').maybeSingle()
-    if (!updated) continue
-    await supabase.from('quantix_ledger_entries').upsert({ user_id: investment.user_id, reference: `maturity:${investment.id}`, type: 'MATURITY_PAYOUT', amount_minor: investment.maturity_minor, direction: 'CREDIT', metadata: { investmentId: investment.id } }, { onConflict: 'reference', ignoreDuplicates: true })
-    const { data: wallet } = await supabase.from('quantix_wallets').select('available_minor, invested_minor, profit_minor').eq('user_id', investment.user_id).maybeSingle()
-    if (wallet) await supabase.from('quantix_wallets').update({ available_minor: Number(wallet.available_minor) + Number(investment.maturity_minor), profit_minor: Number(wallet.profit_minor) + Number(investment.profit_minor), invested_minor: Math.max(0, Number(wallet.invested_minor) - Number(investment.principal_minor)), updated_at: new Date().toISOString() }).eq('user_id', investment.user_id).eq('available_minor', wallet.available_minor).eq('invested_minor', wallet.invested_minor)
+    const { data, error: processError } = await supabase.rpc('process_maturity_atomic', {
+      p_investment_id: investment.id,
+    })
+    if (processError) throw new Error('Unable to process maturity')
+    if (data) processed += 1
   }
   revalidatePath('/')
-  return due?.length ?? 0
+  return processed
 }
 
 export async function getReferralSnapshot() {
