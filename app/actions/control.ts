@@ -20,7 +20,38 @@ export async function getAdminControlData() {
     supabase.from('quantix_withdrawals').select('*').order('created_at', { ascending: false }).limit(50),
     supabase.from('quantix_withdrawal_settings').select('*').limit(1),
   ])
-  return { plans: plans ?? [], accounts: accounts ?? [], withdrawals: withdrawals ?? [], settings: settings?.[0] ?? null }
+  return {
+    plans: (plans ?? []).map((p: any) => ({
+      ...p,
+      minimumMinor: Number(p.minimum_minor),
+      maximumMinor: Number(p.maximum_minor),
+      returnBps: Number(p.return_bps),
+      durationDays: Number(p.duration_days),
+      purchaseBonusMinor: Number(p.purchase_bonus_minor || 0),
+    })),
+    accounts: (accounts ?? []).map((a: any) => ({
+      ...a,
+      bankName: a.bank_name,
+      accountName: a.account_name,
+      accountNumber: a.account_number,
+    })),
+    withdrawals: (withdrawals ?? []).map((w: any) => ({
+      ...w,
+      userId: w.user_id,
+      payoutAccountId: w.payout_account_id,
+      amountMinor: Number(w.amount_minor),
+      feeMinor: Number(w.fee_minor || 0),
+      netMinor: Number(w.net_minor),
+    })),
+    settings: settings?.[0] ? {
+      ...settings[0],
+      enabledDays: settings[0].enabled_days,
+      startTime: settings[0].start_time,
+      endTime: settings[0].end_time,
+      minimumMinor: Number(settings[0].minimum_minor),
+      maximumMinor: settings[0].maximum_minor == null ? null : Number(settings[0].maximum_minor),
+    } : null,
+  }
 }
 
 const planSchema = z.object({ name: z.string().min(2), description: z.string().min(2), category: z.enum(['DAILY', 'WEEKLY', 'MONTHLY']), minimumMinor: z.number().int().positive(), maximumMinor: z.number().int().positive(), returnBps: z.number().int().positive(), durationDays: z.number().int().positive(), terms: z.string().min(2) })
