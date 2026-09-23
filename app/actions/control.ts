@@ -48,19 +48,26 @@ export async function updateWithdrawalSettings(input: { timezone: string; enable
 }
 
 export async function reviewWithdrawal(id: string, status: 'APPROVED' | 'REJECTED', adminNote?: string) {
-  const actorId = await requireAdmin()
+  await requireAdmin()
   const supabase = await createClient()
-  const { data: item, error } = await supabase.from('quantix_withdrawals').update({ status, admin_note: adminNote ?? null, processed_at: new Date().toISOString() }).eq('id', id).eq('status', 'PENDING').select().maybeSingle()
-  if (error || !item) throw new Error('Withdrawal already processed')
-  if (status === 'REJECTED') {
-    const { data: wallet } = await supabase.from('quantix_wallets').select('available_minor').eq('user_id', item.user_id).maybeSingle()
-    if (!wallet) throw new Error('User wallet is missing; withdrawal was not settled.')
-    const { data: refunded, error: refundError } = await supabase.from('quantix_wallets').update({ available_minor: Number(wallet.available_minor) + Number(item.amount_minor), updated_at: new Date().toISOString() }).eq('user_id', item.user_id).eq('available_minor', wallet.available_minor).select('user_id').maybeSingle()
-    if (refundError || !refunded) throw new Error('Wallet changed while refunding withdrawal. Please retry.')
-    await supabase.from('quantix_ledger_entries').insert({ user_id: item.user_id, amount_minor: item.amount_minor, direction: 'CREDIT', type: 'WITHDRAWAL_REFUND', reference: `WDR-REFUND-${item.id}`, status: 'POSTED', metadata: { withdrawalId: item.id } })
+  const note = adminNote?.trim() || null
+  const { data: item, error } = await supabase.rpc('review_withdrawal_atomic', {
+    p_withdrawal_id: id,
+    p_status: status,
+    p_admin_note: note,
+  })
+  if (error || !item) throw new Error(error?.message || 'Withdrawal is no longer pending')
+
+  try {
+    await createUserNotification({
+      userId: item.user_id,
+      title: status === 'APPROVED' ? 'Withdrawal approved' : 'Withdrawal rejected',
+      body: note || `Your withdrawal request is ${status.toLowerCase()}.`,
+      type: 'WITHDRAWAL',
+    })
+  } catch (notificationError) {
+    console.error('Withdrawal notification failed', notificationError)
   }
-  await createUserNotification({ userId: item.user_id, title: status === 'APPROVED' ? 'Withdrawal approved' : 'Withdrawal rejected', body: adminNote || `Your withdrawal request is ${status.toLowerCase()}.`, type: 'WITHDRAWAL' })
-  await supabase.from('quantix_audit_logs').insert({ actor_id: actorId, actor_role: 'ADMIN', action: `WITHDRAWAL_${status}`, target_type: 'WITHDRAWAL', target_id: id, reason: adminNote ?? null })
   revalidatePath('/admin')
   return item
 }

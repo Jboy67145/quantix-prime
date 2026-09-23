@@ -47,19 +47,16 @@ export async function submitDeposit(input: z.input<typeof depositSchema>) {
 }
 
 const withdrawalSchema = z.object({ amountMinor: z.number().int().positive().max(100_000_000_000), payoutAccountId: z.string().uuid() })
+
 export async function submitWithdrawal(input: z.input<typeof withdrawalSchema>) {
   const userId = await getUserId()
   const data = withdrawalSchema.parse(input)
   const supabase = await createClient()
-  const { data: wallet } = await supabase.from('quantix_wallets').select('*').eq('user_id', userId).maybeSingle()
-  const { data: account } = await supabase.from('quantix_payout_accounts').select('*').eq('id', data.payoutAccountId).eq('user_id', userId).maybeSingle()
-  if (!wallet || wallet.available_minor < data.amountMinor) throw new Error('Insufficient available balance')
-  if (!account) throw new Error('Payout account not found')
-  const feeMinor = Math.round(data.amountMinor * 0.01)
-  const { data: withdrawal, error } = await supabase.from('quantix_withdrawals').insert({ user_id: userId, payout_account_id: account.id, amount_minor: data.amountMinor, fee_minor: feeMinor, net_minor: data.amountMinor - feeMinor, payout_account_snapshot: account, status: 'PENDING' }).select().single()
-  if (error) throw new Error('Unable to submit withdrawal')
-  const { error: updateError } = await supabase.from('quantix_wallets').update({ available_minor: wallet.available_minor - data.amountMinor, updated_at: new Date().toISOString() }).eq('user_id', userId).eq('available_minor', wallet.available_minor)
-  if (updateError) throw new Error('Unable to reserve withdrawal balance')
+  const { data: withdrawal, error } = await supabase.rpc('request_withdrawal_atomic', {
+    p_payout_account_id: data.payoutAccountId,
+    p_amount_minor: data.amountMinor,
+  })
+  if (error || !withdrawal) throw new Error(error?.message || 'Unable to submit withdrawal')
   revalidatePath('/')
   return withdrawal
 }
