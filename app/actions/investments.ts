@@ -40,7 +40,9 @@ export async function purchaseInvestment(input: z.input<typeof purchaseSchema>) 
 }
 
 export async function getUserInvestments() {
-  const userId = await getUserId()
+  const user = await getCurrentUser()
+  if (!user) return []
+  const userId = user.id
   const supabase = await createClient()
   const { data, error } = await supabase.from('quantix_investments').select('*').eq('user_id', userId).order('started_at', { ascending: false })
   if (error) throw new Error('Unable to load your investments.')
