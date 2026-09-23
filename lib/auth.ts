@@ -33,10 +33,9 @@ export async function requireUser() {
 export async function requireAdminUser() {
   const user = await requireUser()
   const supabase = await createClient()
-  const { data: profile, error } = await supabase.from('profiles').select('id, role, email, status').eq('id', user.id).maybeSingle()
+  const { data: profile, error } = await supabase.from('profiles').select('id, role').eq('id', user.id).maybeSingle()
   if (error) throw new Error('Unable to verify administrator permissions.')
   if (!profile) throw new Error('Administrator profile not found.')
-  if (String(profile.status || 'ACTIVE').toUpperCase() === 'SUSPENDED') throw new Error('Administrator account is suspended.')
   const role = String(profile.role || '').toUpperCase()
   if (!['ADMIN', 'SUPER_ADMIN'].includes(role)) throw new Error('Forbidden')
   return { user, profile }
