@@ -1,4 +1,6 @@
-import { AuthForm } from '@/components/auth-form''use client'
+'use client'
+
+import { AuthForm } from '@/components/auth-form'
 import { useEffect, useState } from 'react'
 import { Check, Clock3, FileText, Settings2, ShieldAlert, TrendingUp, Wallet, X } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
