@@ -159,7 +159,12 @@ export async function uploadDepositProof(file: File) {
   const path = `${userId}/${safeName}`
   const supabase = await createClient()
   const { error } = await supabase.storage.from('deposit-proofs').upload(path, file, { contentType: file.type, upsert: false })
-  if (error) throw new Error('Unable to upload payment proof. Please try again.')
+  if (error) {
+    const message = error.message.toLowerCase()
+    if (message.includes('bucket') || message.includes('not found')) throw new Error('Payment proof storage is not configured. Please contact support.')
+    if (message.includes('row-level') || message.includes('permission')) throw new Error('Payment proof upload is not authorized. Please sign in again and retry.')
+    throw new Error('Unable to upload payment proof. Please try again.')
+  }
   return path
 }
 
@@ -183,7 +188,9 @@ export async function submitWalletDeposit(input: z.input<typeof walletDepositSch
   })
   if (error || !deposit) {
     await supabase.storage.from('deposit-proofs').remove([data.proofPathname])
-    throw new Error(error?.message || 'Unable to submit deposit proof')
+    const message = error?.message?.toLowerCase() || ''
+    if (message.includes('duplicate') || message.includes('reference')) throw new Error('This transfer reference has already been submitted.')
+    throw new Error('Your deposit proof could not be submitted. Please check the details and try again.')
   }
   revalidatePath('/')
   return deposit

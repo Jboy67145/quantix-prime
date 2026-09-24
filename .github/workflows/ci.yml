@@ -1,0 +1,40 @@
+name: Validate Next.js app
+
+on:
+  push:
+    branches: [main, 'v0/**']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder
+      NEXT_PUBLIC_APP_URL: https://quantixprime.online
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder
+      INITIAL_ADMIN_EMAIL: admin@example.com
+      INITIAL_ADMIN_SETUP_SECRET: ci-placeholder
+      CRON_SECRET: ci-placeholder
+      RESEND_API_KEY: ci-placeholder
+      RESEND_EMAIL_DOMAIN: example.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: git diff --exit-code -- . ':(exclude).next'
+
+# Deployments remain owned by Vercel's Git integration. This workflow keeps GitHub
+# validation aligned with the same lockfile and production build commands.
