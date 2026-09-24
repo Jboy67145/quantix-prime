@@ -39,7 +39,12 @@ export async function purchaseInvestment(input: z.input<typeof purchaseSchema>) 
   const { planId } = purchaseSchema.parse(input)
   const supabase = await createClient()
   const { data, error } = await supabase.rpc('purchase_investment_atomic', { p_plan_id: planId })
-  if (error || !data) throw new Error(error?.message || 'Unable to purchase investment. Please try again.')
+  if (error || !data) {
+    const message = error?.message?.toLowerCase() || ''
+    if (message.includes('insufficient') || message.includes('balance') || message.includes('fund')) throw new Error('Insufficient available balance for this investment.')
+    if (message.includes('plan') || message.includes('active')) throw new Error('This investment plan is no longer available. Please choose another plan.')
+    throw new Error('Unable to complete this investment right now. Please try again.')
+  }
   revalidatePath('/')
   return data
 }
