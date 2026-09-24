@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const { data: referrer } = await supabase.from('profiles').select('id').eq('invite_code', referralCode).neq('id', user.id).maybeSingle()
     if (referrer) {
       await supabase.from('profiles').update({ referred_by_code: referralCode }).eq('id', user.id)
-      await supabase.from('quantix_referrals').upsert({ referrer_user_id: referrer.id, referred_user_id: user.id, invite_code: referralCode, referrer_bonus_minor: 0, invitee_bonus_minor: 0, reward_minor: 0, status: 'PENDING' }, { onConflict: 'referred_user_id' })
+      await supabase.from('quantix_referrals').upsert({ referrer_user_id: referrer.id, referred_user_id: user.id, invite_code: referralCode, reward_minor: 0, status: 'PENDING' }, { onConflict: 'referred_user_id' })
     }
   }
   return NextResponse.redirect(`${appUrl}${next}`)
