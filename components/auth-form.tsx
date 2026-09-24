@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signIn, signUp } from '@/lib/auth-client'
 
-export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
+export function AuthForm({
+  mode,
+  redirectTo = '/',
+}: {
+  mode: 'sign-in' | 'sign-up'
+  redirectTo?: string
+}) {
   const router = useRouter()
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
@@ -44,7 +50,12 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         setPending(false)
         return
       }
-      router.replace('/')
+      const safeRedirect =
+  redirectTo.startsWith('/') && !redirectTo.startsWith('//')
+    ? redirectTo
+    : '/'
+
+router.replace(safeRedirect)
       router.refresh()
     } catch {
       setError('Authentication service is temporarily unavailable. Please try again.')
