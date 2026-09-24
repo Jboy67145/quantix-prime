@@ -190,7 +190,9 @@ export async function submitWalletDeposit(input: z.input<typeof walletDepositSch
 }
 
 export async function getWalletDetails() {
-  const userId = await getUserId()
+  const user = await getCurrentUser()
+  if (!user) return { wallet: null, deposits: [], withdrawals: [], accounts: [] }
+  const userId = user.id
   const supabase = await createClient()
   const [walletResult, depositsResult, withdrawalsResult, accountsResult] = await Promise.all([
     supabase.from('quantix_wallets').select('*').eq('user_id', userId).maybeSingle(),
