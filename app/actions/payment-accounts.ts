@@ -27,7 +27,6 @@ function clean(input: AccountInput) {
 }
 
 export async function listPaymentAccounts() {
-  await requireSuperAdminUser()
   const supabase = await createClient()
   const { data, error } = await supabase.from('quantix_payment_accounts').select('*').order('display_order', { ascending: true })
   if (error) throw new Error(`Unable to load payment accounts: ${error.message}`)
