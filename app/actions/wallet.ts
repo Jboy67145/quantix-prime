@@ -20,17 +20,18 @@ async function getOptionalUserId() {
 
 export async function getWalletSnapshot() {
   const userId = await getOptionalUserId()
-  if (!userId) return { wallet: null, ledger: [], active: [], trendPercent: 0 }
+  if (!userId) return { wallet: null, ledger: [], active: [], withdrawalSettings: null, trendPercent: 0 }
   const supabase = await createClient()
-  const [{ data: wallet }, { data: ledger }, { data: active }] = await Promise.all([
+  const [{ data: wallet }, { data: ledger }, { data: active }, { data: withdrawalSettings }] = await Promise.all([
     supabase.from('quantix_wallets').select('*').eq('user_id', userId).maybeSingle(),
     supabase.from('quantix_ledger_entries').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(12),
     supabase.from('quantix_investments').select('*').eq('user_id', userId).eq('status', 'ACTIVE'),
+    supabase.from('quantix_withdrawal_settings').select('*').limit(1).maybeSingle(),
   ])
   const entries = ledger ?? []
   const credits = entries.filter((entry) => entry.direction === 'CREDIT').reduce((sum, entry) => sum + Number(entry.amount_minor), 0)
   const debits = entries.filter((entry) => entry.direction === 'DEBIT').reduce((sum, entry) => sum + Number(entry.amount_minor), 0)
-  return { wallet, ledger: entries, active: active ?? [], trendPercent: credits ? Math.round(((credits - debits) / credits) * 100) : 0 }
+  return { wallet, ledger: entries, active: active ?? [], withdrawalSettings, trendPercent: credits ? Math.round(((credits - debits) / credits) * 100) : 0 }
 }
 
 export async function getInvestedPlanIds() {
@@ -225,5 +226,7 @@ export async function getWalletDetails() {
   ])
   const failed = [walletResult.error, depositsResult.error, withdrawalsResult.error, accountsResult.error].find(Boolean)
   if (failed) throw new Error(`Unable to load wallet data: ${failed.message}`)
-  return { wallet: walletResult.data, deposits: depositsResult.data ?? [], withdrawals: withdrawalsResult.data ?? [], accounts: accountsResult.data ?? [] }
+  const { data: withdrawalSettings, error: withdrawalSettingsError } = await supabase.from('quantix_withdrawal_settings').select('*').limit(1).maybeSingle()
+  if (withdrawalSettingsError) throw new Error('Unable to load withdrawal settings.')
+  return { wallet: walletResult.data, deposits: depositsResult.data ?? [], withdrawals: withdrawalsResult.data ?? [], accounts: accountsResult.data ?? [], withdrawalSettings }
 }
