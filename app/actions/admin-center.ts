@@ -117,7 +117,7 @@ const plan=z.object({
   category:z.enum(['DAILY','WEEKLY','MONTHLY']),
   minimumMinor:z.number().int().positive(),
   maximumMinor:z.number().int().positive(),
-  returnBps:z.number().int().nonnegative(),
+  returnMinor:z.number().int().nonnegative(),
   durationDays:z.number().int().positive().max(3650),
   terms:z.string().trim().min(2).max(5000),
   purchaseBonusMinor:z.number().int().nonnegative(),
@@ -133,7 +133,8 @@ export async function savePlan(input:z.input<typeof plan>){
   const before=d.id?(await s.from('quantix_plans').select('*').eq('id',d.id).maybeSingle()).data:null
   const payload={
     name:d.name,description:d.description,category:d.category,
-    minimum_minor:d.minimumMinor,maximum_minor:d.maximumMinor,return_bps:d.returnBps,
+    minimum_minor:d.minimumMinor,maximum_minor:d.maximumMinor,return_minor:d.returnMinor,
+    return_bps:d.minimumMinor>0?Math.round(d.returnMinor*10000/d.minimumMinor):0,
     duration_days:d.durationDays,terms:d.terms,purchase_bonus_minor:d.purchaseBonusMinor,
     active:d.active,display_order:d.displayOrder,deleted_at:null,updated_at:new Date().toISOString(),
   }
