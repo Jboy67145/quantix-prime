@@ -4,7 +4,7 @@ import { useEffect,useMemo,useState } from 'react'
 import { ArrowLeft, RefreshCw, Shield, Users, Wallet, TrendingUp, Landmark, Gift, Bell, ScrollText, Settings, Archive, RotateCcw, Save, Send, Search, CheckCircle2, Clock3, Copy, Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import {
-  getAdminCenter,savePlan,archivePlan,setUserState,savePolicy,saveDepositPolicy,sendAdminNotification,
+  getAdminCenter,savePlan,saveMarquee,archiveMarquee,archivePlan,setUserState,savePolicy,saveDepositPolicy,sendAdminNotification,
   createDraw,updateDraw,toggleDraw,updateReferral,archivePayout,restorePayout,
   updateUserProfile,processInvestmentMaturity
 } from '@/app/actions/admin-center'
@@ -40,6 +40,10 @@ export default function ControlCenter(){
  const [draw,setDraw]=useState<any>(emptyDraw)
  const [copied,setCopied]=useState('')
  const [referralRewards,setReferralRewards]=useState<Record<string,string>>({})
+ const [confirmPlan,setConfirmPlan]=useState<any>(null)
+ const [marqueeOpen,setMarqueeOpen]=useState(false)
+ const [marquee,setMarquee]=useState<any>({title:'',content:'',kind:'HIGHLIGHT',userId:null,active:true})
+ const [adminScrolling,setAdminScrolling]=useState(false)
 
  const load=async()=>{
    try{
@@ -59,6 +63,8 @@ export default function ControlCenter(){
    }catch(e){setError(e instanceof Error?e.message:'Unable to load control center.')}
  }
  useEffect(()=>{void load()},[])
+
+ useEffect(()=>{ const onScroll=()=>{setAdminScrolling(true);window.clearTimeout((window as any).__qxScroll);(window as any).__qxScroll=window.setTimeout(()=>setAdminScrolling(false),420)};window.addEventListener('scroll',onScroll,{passive:true});return()=>window.removeEventListener('scroll',onScroll)},[])
 
  useEffect(()=>{
    const timer=window.setInterval(()=>{ if(!busy) void load() },15000)
@@ -255,7 +261,7 @@ export default function ControlCenter(){
        <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>{
          if(!plan.name.trim()||!plan.description.trim()||!plan.terms.trim())return setError('Plan name, description and terms are required.')
          if(plan.maximumMinor<plan.minimumMinor)return setError('Maximum amount must be at least the minimum.')
-         void act('plan',()=>savePlan(plan),plan.id?'Plan updated.':'Plan created.')
+         setConfirmPlan({...plan})
        }}><Save size={15}/>Save plan</button>
       </div></Panel>
     </div>}
@@ -348,6 +354,9 @@ export default function ControlCenter(){
       </div></Panel>
     </div>}
    </div>
+   <button type="button" aria-label="Open marquee highlights" title="Marquee Highlights" className={adminScrolling?'marquee-fab is-scrolling':'marquee-fab'} onClick={()=>setMarqueeOpen(true)}><Bell size={21}/><span>Highlights</span></button>
+   {marqueeOpen&&<div className="sheet-backdrop" onClick={()=>setMarqueeOpen(false)}><section className="sheet admin-marquee-sheet" onClick={e=>e.stopPropagation()}><div className="sheet-handle"/><div className="sheet-title"><div><p className="eyebrow">Marquee Highlights</p><h2>Publish to users</h2></div><button className="icon-button" onClick={()=>setMarqueeOpen(false)}><Check size={17}/></button></div><div className="grid gap-3"><select className="account-form" value={marquee.kind} onChange={e=>setMarquee({...marquee,kind:e.target.value})}><option value="HIGHLIGHT">Highlight</option><option value="TRENDING">Trending</option><option value="NEWS">News</option><option value="BROADCAST">Broadcast</option><option value="IMPORTANT">Important</option></select><input className="account-form" placeholder="Bold title" value={marquee.title} onChange={e=>setMarquee({...marquee,title:e.target.value})}/><textarea className="account-form min-h-28" placeholder="Marquee message" value={marquee.content} onChange={e=>setMarquee({...marquee,content:e.target.value})}/><select className="account-form" value={marquee.userId||''} onChange={e=>setMarquee({...marquee,userId:e.target.value||null})}><option value="">All users</option>{data.profiles.map((u:any)=><option key={u.id} value={u.id}>{u.name||'Unnamed'} · {u.username||u.id}</option>)}</select><label className="admin-checkbox"><input type="checkbox" checked={marquee.active} onChange={e=>setMarquee({...marquee,active:e.target.checked})}/> Publish now</label><button type="button" className="primary-button full" disabled={Boolean(busy)} onClick={()=>{if(!marquee.title.trim()||!marquee.content.trim())return setError('Marquee title and content are required.');void act('marquee',()=>saveMarquee(marquee),'Marquee published successfully.')}}><Send size={15}/>{busy==='marquee'?'Submitting…':'Publish marquee'}</button></div></section></div>}
+   {confirmPlan&&<div className="sheet-backdrop" onClick={()=>setConfirmPlan(null)}><section className="sheet" onClick={e=>e.stopPropagation()}><div className="sheet-handle"/><div className="sheet-title"><div><p className="eyebrow">Confirm submission</p><h2>{confirmPlan.id?'Update investment plan':'Create investment plan'}</h2></div><button className="icon-button" onClick={()=>setConfirmPlan(null)}><Check size={17}/></button></div><div className="plan-calcs"><span><small>Plan</small><b>{confirmPlan.name}</b></span><span><small>Investment</small><b>{naira(confirmPlan.minimumMinor)}</b></span><span><small>Return earned</small><b>{naira(confirmPlan.returnMinor)}</b></span></div><p className="sheet-copy">Duration: <strong>{confirmPlan.durationDays} days</strong> · Purchase bonus: <strong>{naira(confirmPlan.purchaseBonusMinor)}</strong> · Total expected payout: <strong>{naira(confirmPlan.minimumMinor+confirmPlan.returnMinor+confirmPlan.purchaseBonusMinor)}</strong></p><div className="grid grid-cols-2 gap-2 mt-4"><button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>setConfirmPlan(null)}>Return to edit</button><button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>void act('plan',()=>savePlan(confirmPlan),confirmPlan.id?'Plan updated.':'Plan created.').then(()=>setConfirmPlan(null))}>{busy==='plan'?'Submitting…':'Proceed & submit'}</button></div></section></div>}
   </div>
  </main>
 }
