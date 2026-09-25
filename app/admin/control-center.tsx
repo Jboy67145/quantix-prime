@@ -39,6 +39,7 @@ export default function ControlCenter(){
  const [msg,setMsg]=useState<any>({userId:'',title:'',body:'',type:'SYSTEM'})
  const [draw,setDraw]=useState<any>(emptyDraw)
  const [copied,setCopied]=useState('')
+ const [referralRewards,setReferralRewards]=useState<Record<string,string>>({})
 
  const load=async()=>{
    try{
@@ -250,13 +251,25 @@ export default function ControlCenter(){
     </div>}
 
     {tab==='referrals'&&<Panel title="Referral records">
-      <p className="admin-copy mb-4">Referral status and reward values are editable and audited. This control does not silently credit a wallet; financial credits must use the audited wallet adjustment path.</p>
+      <p className="admin-copy mb-4">Set the reward, then mark a pending referral qualified. Qualification credits the referrer wallet once, creates a ledger entry, and records an audit event. A paid referral cannot be reset or paid twice.</p>
       {data.referrals.map((x:any)=><Row key={x.id} title={x.status+' · '+naira(x.reward_minor)} meta={x.referrer_user_id+' → '+x.referred_user_id+' · '+date(x.created_at)}>
-       <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>updateReferral(x.id,'QUALIFIED',Number(x.reward_minor||0),'Admin marked referral qualified'),'Referral marked qualified.')}>Mark qualified</button>
-       <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>updateReferral(x.id,'PENDING',Number(x.reward_minor||0),'Admin reset referral status'),'Referral reset.')}>Reset</button>
+       {x.status==='PENDING'&&<>
+        <input
+          className="admin-input max-w-40"
+          type="number"
+          min="1"
+          step="1"
+          inputMode="numeric"
+          value={referralRewards[x.id] ?? String(x.reward_minor || '')}
+          onChange={e=>setReferralRewards(v=>({...v,[x.id]:e.target.value}))}
+          placeholder="Reward (minor)"
+          aria-label="Referral reward in minor units"
+        />
+        <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>updateReferral(x.id,'QUALIFIED',Number(referralRewards[x.id] ?? x.reward_minor ?? 0),'Admin marked referral qualified and paid reward'),'Referral qualified and reward paid.')}>Mark qualified & pay</button>
+       </>}
       </Row>)}
       {!data.referrals.length&&<Empty text="No referrals yet."/>}
-    </Panel>}
+    </Panel>
 
     {tab==='lucky'&&<div className="grid gap-4 lg:grid-cols-[1fr_390px]">
       <Panel title="Lucky Wish draws">{data.draws.map((x:any)=><Row key={x.id} title={x.status+' · '+x.title} meta={x.reward_type+' · '+naira(x.reward_minor||0)+' · '+date(x.closes_at)}>
