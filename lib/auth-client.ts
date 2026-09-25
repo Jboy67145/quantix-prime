@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { User } from '@supabase/supabase-js'
 import { getClientAppUrl } from '@/lib/app-url'
 
-function getSupabase() {
-  return createClient()
-}
+type AuthResult = { data?: { session?: boolean; user?: { id: string; email?: string | null } }; error?: { message: string } }
 
 function normalizeEmail(email: string) {
   const normalized = email.trim().toLowerCase()
@@ -15,15 +12,85 @@ function normalizeEmail(email: string) {
   return normalized
 }
 
-export const signIn = { email: async ({ email, password }: { email: string; password: string }) => getSupabase().auth.signInWithPassword({ email: normalizeEmail(email), password }) }
-export const signUp = { email: async ({ email, password, name, username, referralCode }: { email: string; password: string; name?: string; username?: string; referralCode?: string }) => getSupabase().auth.signUp({ email: normalizeEmail(email), password, options: { emailRedirectTo: `${getClientAppUrl()}/auth/callback`, data: { full_name: name?.trim(), username: username?.trim().toLowerCase(), referral_code: referralCode?.trim().toLowerCase() || null } } }) }
-export const requestPasswordReset = (email: string) => getSupabase().auth.resetPasswordForEmail(normalizeEmail(email), { redirectTo: `${getClientAppUrl()}/auth/callback?next=/reset-password` })
-export const updatePassword = (password: string) => getSupabase().auth.updateUser({ password })
-export const signOut = () => getSupabase().auth.signOut()
+async function authRequest(path: string, body: Record<string, unknown>): Promise<AuthResult> {
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const result = await response.json().catch(() => ({}))
+  if (!response.ok) return { error: { message: result.error || 'Authentication request failed.' } }
+  return result
+}
+
+export const signIn = {
+  email: async ({ email, password }: { email: string; password: string }) =>
+    authRequest('/api/auth/sign-in', { email: normalizeEmail(email), password }),
+}
+
+export const signUp = {
+  email: async ({
+    email,
+    password,
+    name,
+    username,
+    referralCode,
+  }: {
+    email: string
+    password: string
+    name?: string
+    username?: string
+    referralCode?: string
+  }) =>
+    authRequest('/api/auth/sign-up', {
+      email: normalizeEmail(email),
+      password,
+      name: name?.trim(),
+      username: username?.trim().toLowerCase(),
+      referralCode: referralCode?.trim().toLowerCase() || null,
+    }),
+}
+
+export const requestPasswordReset = (email: string) =>
+  createClient().auth.resetPasswordForEmail(normalizeEmail(email), {
+    redirectTo: `${getClientAppUrl()}/auth/callback?next=/reset-password`,
+  })
+
+export const updatePassword = (password: string) => createClient().auth.updateUser({ password })
+
+export const signOut = async () => {
+  await fetch('/api/auth/sign-out', { method: 'POST' })
+}
 
 export function useSession() {
-  const [data, setData] = useState<{ user: User } | null>(null)
+  const [data, setData] = useState<{ user: { id: string; email?: string | null } } | null>(null)
   const [isPending, setIsPending] = useState(true)
-  useEffect(() => { const supabase = getSupabase(); let mounted = true; supabase.auth.getUser().then(({ data: { user } }) => { if (mounted) { setData(user ? { user } : null); setIsPending(false) } }); const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => { if (mounted) { setData(session?.user ? { user: session.user } : null); setIsPending(false) } }); return () => { mounted = false; listener.subscription.unsubscribe() } }, [])
+
+  useEffect(() => {
+    let mounted = true
+
+    fetch('/api/auth/session', { cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Session request failed')
+        return response.json()
+      })
+      .then((result) => {
+        if (mounted) {
+          setData(result.user ? { user: result.user } : null)
+          setIsPending(false)
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setData(null)
+          setIsPending(false)
+        }
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
   return { data, isPending }
 }
