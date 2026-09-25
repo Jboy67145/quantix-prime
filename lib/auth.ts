@@ -1,26 +1,22 @@
 import { createClient } from '@/lib/supabase/server'
 
 async function getSession() {
-      const supabase = await createClient()
-      const { data } = await supabase.auth.getUser()
-      return data.user ? { user: data.user } : null
-    }
+  const supabase = await createClient()
+  const { data } = await supabase.auth.getUser()
+  return data.user ? { user: data.user } : null
+}
 
 export const auth = {
   getSession,
-  api: {
-    getSession: async () => {
-      const supabase = await createClient()
-      const { data } = await supabase.auth.getUser()
-      return data.user ? { user: data.user } : null
-    },
-  },
+  api: { getSession },
 }
 
 export async function getCurrentUser() {
   const supabase = await createClient()
   const { data, error } = await supabase.auth.getUser()
-  if (error) return null
+  if (error || !data.user) return null
+  const { data: profile } = await supabase.from('profiles').select('status').eq('id', data.user.id).maybeSingle()
+  if (profile && profile.status && profile.status !== 'ACTIVE') return null
   return data.user
 }
 
@@ -31,14 +27,15 @@ export async function requireUser() {
 }
 
 export async function requireAdminUser() {
-  const user = await requireUser()
   const supabase = await createClient()
-  const { data: profile, error } = await supabase.from('profiles').select('id, role').eq('id', user.id).maybeSingle()
+  const { data } = await supabase.auth.getUser()
+  if (!data.user) throw new Error('Unauthorized')
+  const { data: profile, error } = await supabase.from('profiles').select('id, role, status').eq('id', data.user.id).maybeSingle()
   if (error) throw new Error('Unable to verify administrator permissions.')
   if (!profile) throw new Error('Administrator profile not found.')
   const role = String(profile.role || '').toUpperCase()
   if (!['ADMIN', 'SUPER_ADMIN'].includes(role)) throw new Error('Forbidden')
-  return { user, profile }
+  return { user: data.user, profile }
 }
 
 export async function requireSuperAdminUser() {
