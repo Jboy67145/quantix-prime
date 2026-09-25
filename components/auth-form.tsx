@@ -21,7 +21,6 @@ export function AuthForm({
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [pending, setPending] = useState(false)
-  const [success, setSuccess] = useState('')
   const isSignUp = mode === 'sign-up'
   useEffect(() => {
     if (isSignUp) {
