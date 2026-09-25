@@ -74,3 +74,14 @@ export async function toggleDraw(id:string,open:boolean){
  const r=await s.from('quantix_lucky_draws').update({status:open?'OPEN':'CLOSED',updated_at:new Date().toISOString()}).eq('id',i).select().single();if(r.error)throw new Error(r.error.message)
  await log(a,'LUCKY_DRAW_STATUS_CHANGED','LUCKY_DRAW',i,before,r.data);return r.data
 }
+
+export async function updateReferral(id:string,status:'PENDING'|'QUALIFIED',rewardMinor:number,reason:string){
+ const a=await ctx(),i=z.string().uuid().parse(id),s=await createClient(),before=(await s.from('quantix_referrals').select('*').eq('id',i).single()).data
+ const r=await s.from('quantix_referrals').update({status,reward_minor:Math.max(0,Math.trunc(rewardMinor)),qualified_at:status==='QUALIFIED'?new Date().toISOString():null}).eq('id',i).select().single()
+ if(r.error)throw new Error(r.error.message);await log(a,'REFERRAL_UPDATED','REFERRAL',i,before,r.data,reason);return r.data
+}
+export async function archivePayout(id:string,reason:string){
+ const a=await ctx(),i=z.string().uuid().parse(id),s=await createClient(),before=(await s.from('quantix_payout_accounts').select('*').eq('id',i).single()).data
+ const r=await s.from('quantix_payout_accounts').update({deleted_at:new Date().toISOString(),is_default:false}).eq('id',i).select().single()
+ if(r.error)throw new Error(r.error.message);await log(a,'PAYOUT_ACCOUNT_ARCHIVED','PAYOUT_ACCOUNT',i,before,r.data,reason);return r.data
+}
