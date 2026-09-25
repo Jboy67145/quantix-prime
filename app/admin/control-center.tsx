@@ -98,9 +98,10 @@ export default function ControlCenter(){
    {error&&<div className="admin-error m-4" role="alert"><Shield size={17}/><span>{error}</span></div>}
    {success&&<div className="admin-success m-4" role="status"><CheckCircle2 size={17}/><span>{success}</span></div>}
 
-   <section className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
+   <section className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5">
     {[
-      ['Users',data.profiles.length],
+      ['Registered users',data.registeredUserCount],
+      ['Admin accounts',data.adminAccountCount],
       ['Live plans',data.plans.filter((x:any)=>x.active&&!x.deleted_at).length],
       ['Pending deposits',data.deposits.filter((x:any)=>x.status==='PENDING').length],
       ['Pending withdrawals',data.withdrawals.filter((x:any)=>x.status==='PENDING').length]
@@ -119,9 +120,9 @@ export default function ControlCenter(){
       <Panel title="Recent audit activity">{data.audits.slice(0,20).map((x:any)=><Row key={x.id} title={x.action} meta={x.target_type+' · '+date(x.created_at)}/>)}</Panel>
     </div>}
 
-    {tab==='users'&&<Panel title={`User accounts · ${data.profiles.length}`}>
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row"><div className="flex flex-1 gap-2"><Search className="mt-3 opacity-50"/><input className="account-form flex-1" placeholder="Search name, username, email or UUID" value={q} onChange={e=>setQ(e.target.value)}/></div><div className="secondary-button"><Users size={15}/>{users.length} shown</div></div>
-      {users.map((u:any)=><Row key={u.id} title={(u.name||'Unnamed')+' · '+(u.username||'No username')} meta={u.status+' · '+u.role+' · '+u.id}>
+    {tab==='users'&&<Panel title={`Registered accounts · ${data.registeredAccountCount}`}>
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row"><div className="flex flex-1 gap-2"><Search className="mt-3 opacity-50"/><input className="account-form flex-1" placeholder="Search name, username, email or UUID" value={q} onChange={e=>setQ(e.target.value)}/></div><div className="secondary-button"><Users size={15}/>{users.length} shown · {data.registeredUserCount} users · {data.adminAccountCount} admins</div></div>
+      {users.map((u:any)=><Row key={u.id} title={(u.name||'Unnamed')+' · '+(u.username||'No username')} meta={(u.email||'No email')+' · '+u.status+' · '+u.role+' · '+u.id}>
        <button type="button" className="primary-button" onClick={()=>selectUser(u)}>Manage</button>
        {u.status==='ACTIVE'
         ?<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(u.id,()=>setUserState(u.id,'SUSPENDED','Administrative suspension'),'User suspended.')}>Suspend</button>
@@ -138,7 +139,7 @@ export default function ControlCenter(){
       </label>
       {selectedUser&&<div className="rounded-2xl border border-white/10 bg-black/20 p-4 mb-4">
        <div className="font-semibold">{selectedUser.name||'Unnamed'} · {selectedUser.username||'No username'}</div>
-       <div className="text-xs opacity-60 mt-1">{selectedUser.id}</div>
+       <div className="text-xs opacity-60 mt-1">{selectedUser.email||'No email'} · {selectedUser.id}</div>
        <div className="grid gap-3 sm:grid-cols-3 mt-3"><div><span className="text-xs opacity-60">Available</span><strong className="block">{naira(walletForUser?.available_minor||0)}</strong></div><div><span className="text-xs opacity-60">Invested</span><strong className="block">{naira(walletForUser?.invested_minor||0)}</strong></div><div><span className="text-xs opacity-60">Profit</span><strong className="block">{naira(walletForUser?.profit_minor||0)}</strong></div></div>
       </div>}
       <div className="grid gap-2 sm:grid-cols-3">
