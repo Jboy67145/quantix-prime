@@ -26,6 +26,7 @@ export async function getAdminControlData() {
       minimumMinor: Number(p.minimum_minor),
       maximumMinor: Number(p.maximum_minor),
       returnBps: Number(p.return_bps),
+      returnMinor: Number(p.return_minor || 0),
       durationDays: Number(p.duration_days),
       purchaseBonusMinor: Number(p.purchase_bonus_minor || 0),
     })),
@@ -54,12 +55,12 @@ export async function getAdminControlData() {
   }
 }
 
-const planSchema = z.object({ name: z.string().min(2), description: z.string().min(2), category: z.enum(['DAILY', 'WEEKLY', 'MONTHLY']), minimumMinor: z.number().int().positive(), maximumMinor: z.number().int().positive(), returnBps: z.number().int().positive(), durationDays: z.number().int().positive(), terms: z.string().min(2) })
+const planSchema = z.object({ name: z.string().min(2), description: z.string().min(2), category: z.enum(['DAILY', 'WEEKLY', 'MONTHLY']), minimumMinor: z.number().int().positive(), maximumMinor: z.number().int().positive(), returnMinor: z.number().int().nonnegative(), durationDays: z.number().int().positive(), terms: z.string().min(2) })
 export async function createPlan(input: z.input<typeof planSchema>) {
   const actorId = await requireAdmin()
   const data = planSchema.parse(input)
   const supabase = await createClient()
-  const { data: plan, error } = await supabase.from('quantix_plans').insert({ name: data.name, description: data.description, category: data.category, minimum_minor: data.minimumMinor, maximum_minor: data.maximumMinor, return_bps: data.returnBps, duration_days: data.durationDays, terms: data.terms }).select().single()
+  const { data: plan, error } = await supabase.from('quantix_plans').insert({ name: data.name, description: data.description, category: data.category, minimum_minor: data.minimumMinor, maximum_minor: data.maximumMinor, return_minor: data.returnMinor, return_bps: data.minimumMinor > 0 ? Math.round(data.returnMinor * 10000 / data.minimumMinor) : 0, duration_days: data.durationDays, terms: data.terms }).select().single()
   if (error) throw new Error('Unable to create plan')
   await supabase.from('quantix_audit_logs').insert({ actor_id: actorId, actor_role: 'ADMIN', action: 'CREATE_PLAN', target_type: 'PLAN', target_id: plan.id })
   revalidatePath('/admin')
