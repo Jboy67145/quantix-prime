@@ -16,7 +16,7 @@ const naira=(m:number)=>'₦'+(Number(m||0)/100).toLocaleString('en-NG',{minimum
 const date=(v:any)=>v ? new Date(v).toISOString().replace('T',' ').slice(0,16)+' UTC' : '—'
 const days=['MON','TUE','WED','THU','FRI','SAT','SUN']
 
-const emptyPlan={name:'',description:'',category:'MONTHLY',minimumMinor:1000000,maximumMinor:1000000,returnBps:500,durationDays:30,terms:'',purchaseBonusMinor:0,active:true,displayOrder:1}
+const emptyPlan={name:'',description:'',category:'MONTHLY',minimumMinor:1000000,maximumMinor:1000000,returnMinor:100000,durationDays:30,terms:'',purchaseBonusMinor:0,active:true,displayOrder:1}
 const emptyDraw={title:'',description:'',rewardType:'CASH',rewardMinor:0,alternateReward:'',entryCostMinor:0,opensAt:'',closesAt:''}
 const emptyPolicy={timezone:'Africa/Lagos',enabledDays:['MON','TUE','WED','THU','FRI'],startTime:'09:00',endTime:'17:00',minimumMinor:100000,maximumMinor:null,enabled:true}
 const emptyDepositPolicy={timezone:'Africa/Lagos',enabledDays:['MON','TUE','WED','THU','FRI'],startTime:'09:00',endTime:'17:00',enabled:true}
@@ -249,7 +249,7 @@ export default function ControlCenter(){
        <select className="account-form" value={plan.category} onChange={e=>setPlan({...plan,category:e.target.value})}><option>DAILY</option><option>WEEKLY</option><option>MONTHLY</option></select>
        {[
         ['minimumMinor','Minimum ₦'],['maximumMinor','Maximum ₦'],['returnMinor','Return earned ₦'],['durationDays','Duration days'],['purchaseBonusMinor','Purchase bonus ₦'],['displayOrder','Display order']
-       ].map((x:any)=><input key={x[0]} className="account-form" type="number" placeholder={x[1]} value={plan[x[0]]/100} onChange={e=>setPlan({...plan,[x[0]]:Math.round(Number(e.target.value)*100)})}/> )}
+       ].map((x:any)=><input key={x[0]} className="account-form" type="number" placeholder={x[1]} value={['minimumMinor','maximumMinor','returnMinor','purchaseBonusMinor'].includes(x[0])?plan[x[0]]/100:plan[x[0]]} onChange={e=>setPlan({...plan,[x[0]]:['minimumMinor','maximumMinor','returnMinor','purchaseBonusMinor'].includes(x[0])?Math.round(Number(e.target.value)*100):Number(e.target.value)})}/> )}
        <textarea className="account-form min-h-24" placeholder="Terms" value={plan.terms} onChange={e=>setPlan({...plan,terms:e.target.value})}/>
        <label className="admin-checkbox"><input type="checkbox" checked={plan.active} onChange={e=>setPlan({...plan,active:e.target.checked})}/> Active</label>
        <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>{
