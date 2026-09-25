@@ -20,6 +20,7 @@ export function AuthForm({
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
+  const [success, setSuccess] = useState('')
   const isSignUp = mode === 'sign-up'
   useEffect(() => { if (isSignUp) setReferralCode(new URLSearchParams(window.location.search).get('ref') || '') }, [isSignUp])
 
@@ -27,6 +28,7 @@ export function AuthForm({
     event.preventDefault()
     setPending(true)
     setError('')
+    setSuccess('')
     try {
       const result = isSignUp
         ? await signUp.email({ name, username, email, password, referralCode })
@@ -58,6 +60,7 @@ router.replace(safeRedirect)
     <label>Email address<input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
     <label>Password<input type="password" minLength={8} autoComplete={isSignUp ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
     {error && <p className="auth-error" role="alert">{error}</p>}
+    {success && <p className="auth-success" role="status">{success}</p>}
     <button className="primary-button full" disabled={pending}>{pending ? 'Please wait…' : isSignUp ? 'Create account' : 'Sign in securely'}</button>
     {!isSignUp && <Link className="auth-link auth-forgot" href="/forgot-password">Forgot password?</Link>}
   </form>
