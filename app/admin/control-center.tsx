@@ -52,6 +52,11 @@ export default function ControlCenter(){
  }
  useEffect(()=>{void load()},[])
 
+ useEffect(()=>{
+   const timer=window.setInterval(()=>{ if(!busy) void load() },15000)
+   return()=>window.clearInterval(timer)
+ },[busy])
+
  const act=async(k:string,fn:()=>Promise<any>,message?:string)=>{
    try{setBusy(k);setError('');setSuccess('');await fn();await load();if(message)setSuccess(message)}
    catch(e){setError(e instanceof Error?e.message:'Action failed. Nothing was changed.')}
