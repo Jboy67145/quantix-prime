@@ -87,7 +87,7 @@ export default function ControlCenter(){
    setSelectedUser(u); setProfile({name:u.name||'',username:u.username||''}); setTab('wallet'); setError(''); setSuccess('')
  }
 
- if(!data)return <main className="admin-shell"><div className="admin-frame"><div className="admin-loading">Loading secure control center…</div></div></main>
+ if(!data)return <main className="admin-shell"><div className="admin-frame"><div className="admin-shimmer"><div className="shimmer-block shimmer-title"/><div className="shimmer-grid">{Array.from({length:5}).map((_,i)=><div className="shimmer-block shimmer-stat" key={i}/>)}</div><div className="shimmer-block shimmer-panel"/><div className="shimmer-block shimmer-panel"/></div></div></main>
 
  const tabs:any[]=[
   ['overview','Overview',Shield],['users','Users',Users],['wallet','Wallet',Wallet],
@@ -307,7 +307,7 @@ export default function ControlCenter(){
     </div>}
 
     {tab==='notifications'&&<Panel title="Send notifications"><div className="grid gap-2 max-w-xl">
-      <select className="account-form" value={msg.userId} onChange={e=>setMsg({...msg,userId:e.target.value})}><option value="">All active users</option>{data.profiles.map((u:any)=><option key={u.id} value={u.id}>{u.name||'Unnamed'} · {u.username||u.id}</option>)}</select>
+      <select className="account-form" value={msg.userId} onChange={e=>setMsg({...msg,userId:e.target.value})}><option value="">All users</option>{data.profiles.map((u:any)=><option key={u.id} value={u.id}>{u.name||'Unnamed'} · {u.username||u.id}</option>)}</select><select className="account-form" value={msg.type} onChange={e=>setMsg({...msg,type:e.target.value})}><option value="SYSTEM">System update</option><option value="NEWS">News</option><option value="TRENDING">Trending</option><option value="IMPORTANT">Important</option><option value="NEW">New</option><option value="PROMOTION">Promotion</option></select>
       <input className="account-form" placeholder="Title" value={msg.title} onChange={e=>setMsg({...msg,title:e.target.value})}/>
       <textarea className="account-form min-h-32" placeholder="Message" value={msg.body} onChange={e=>setMsg({...msg,body:e.target.value})}/>
       <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>{if(!msg.title.trim()||!msg.body.trim())return setError('Notification title and message are required.');void act('notify',()=>sendAdminNotification(msg.userId||null,msg.title,msg.body,msg.type),'Notification sent.')}}><Send size={15}/>Send notification</button>
