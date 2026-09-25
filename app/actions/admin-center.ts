@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { requireAdminUser } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 
 async function ctx(){ return await requireAdminUser() }
 
@@ -22,29 +23,84 @@ async function log(actor:any,action:string,type:string,id:string|null,before:any
   if (error) throw new Error(`Audit log failed: ${error.message}`)
 }
 
+async function listAllAuthUsers(s:any){
+  const users:any[]=[]
+  for(let page=1;;page++){
+    const {data,error}=await s.auth.admin.listUsers({page,perPage:1000})
+    if(error) throw new Error(`Unable to read Supabase Auth users: ${error.message}`)
+    users.push(...(data.users||[]))
+    if((data.users||[]).length<1000) break
+  }
+  return users
+}
+
 export async function getAdminCenter(){
   await ctx()
-  const s=await createClient()
-  const q=await Promise.all([
-    s.from('profiles').select('*').order('created_at',{ascending:false}).limit(500),
-    s.from('quantix_wallets').select('*').limit(500),
-    s.from('quantix_plans').select('*').order('display_order'),
-    s.from('quantix_deposits').select('*').order('created_at',{ascending:false}).limit(500),
-    s.from('quantix_withdrawals').select('*').order('created_at',{ascending:false}).limit(500),
-    s.from('quantix_investments').select('*').order('started_at',{ascending:false}).limit(500),
-    s.from('quantix_referrals').select('*').order('created_at',{ascending:false}).limit(500),
-    s.from('quantix_lucky_draws').select('*').order('created_at',{ascending:false}).limit(200),
-    s.from('quantix_notifications').select('*').order('created_at',{ascending:false}).limit(500),
-    s.from('quantix_payment_accounts').select('*').order('display_order'),
-    s.from('quantix_payout_accounts').select('*').order('created_at',{ascending:false}).limit(500),
-    s.from('quantix_ledger_entries').select('*').order('created_at',{ascending:false}).limit(500),
-    s.from('quantix_audit_logs').select('*').order('created_at',{ascending:false}).limit(500),
-    s.from('quantix_withdrawal_settings').select('*').limit(1),
+  // This is a server-only, admin-authorized read. The normal authenticated client is
+  // intentionally subject to RLS, which can otherwise make the admin see only its own
+  // profile. The service client bypasses RLS after requireAdminUser() has succeeded.
+  const s=createServiceClient()
+  const [q,authUsers]=await Promise.all([
+    Promise.all([
+      s.from('profiles').select('*').order('created_at',{ascending:false}).limit(5000),
+      s.from('quantix_wallets').select('*').limit(5000),
+      s.from('quantix_plans').select('*').order('display_order'),
+      s.from('quantix_deposits').select('*').order('created_at',{ascending:false}).limit(5000),
+      s.from('quantix_withdrawals').select('*').order('created_at',{ascending:false}).limit(5000),
+      s.from('quantix_investments').select('*').order('started_at',{ascending:false}).limit(5000),
+      s.from('quantix_referrals').select('*').order('created_at',{ascending:false}).limit(5000),
+      s.from('quantix_lucky_draws').select('*').order('created_at',{ascending:false}).limit(2000),
+      s.from('quantix_notifications').select('*').order('created_at',{ascending:false}).limit(5000),
+      s.from('quantix_payment_accounts').select('*').order('display_order'),
+      s.from('quantix_payout_accounts').select('*').order('created_at',{ascending:false}).limit(5000),
+      s.from('quantix_ledger_entries').select('*').order('created_at',{ascending:false}).limit(5000),
+      s.from('quantix_audit_logs').select('*').order('created_at',{ascending:false}).limit(5000),
+      s.from('quantix_withdrawal_settings').select('*').limit(1),
+    ]),
+    listAllAuthUsers(s),
   ])
   const failed=q.find(x=>x.error)
   if(failed?.error) throw new Error(failed.error.message)
+
+  const profileRows=q[0].data||[]
+  const profileById=new Map(profileRows.map((p:any)=>[p.id,p]))
+  const authById=new Map(authUsers.map((u:any)=>[u.id,u]))
+  const profiles=authUsers.map((u:any)=>{
+    const p=profileById.get(u.id)
+    return p
+      ? {...p,email:u.email||null,auth_created_at:u.created_at,auth_last_sign_in_at:u.last_sign_in_at||null,account_source:'AUTH'}
+      : {
+          id:u.id,
+          name:u.user_metadata?.name||u.email?.split('@')[0]||'Unnamed',
+          username:u.user_metadata?.username||'',
+          role:'USER',
+          status:'ACTIVE',
+          invite_code:null,
+          referred_by_code:null,
+          created_at:u.created_at,
+          updated_at:u.updated_at||u.created_at,
+          email:u.email||null,
+          auth_created_at:u.created_at,
+          auth_last_sign_in_at:u.last_sign_in_at||null,
+          account_source:'AUTH_PROFILE_MISSING',
+        }
+  })
+  // Keep profile-only rows visible too, so data corruption never silently disappears
+  // from the control center. These are not counted as registered Auth accounts.
+  for(const p of profileRows){
+    if(!authById.has(p.id)) profiles.push({...p,email:null,account_source:'PROFILE_ONLY'})
+  }
+
   return {
-    profiles:q[0].data||[], wallets:q[1].data||[], plans:q[2].data||[],
+    profiles,
+    registeredAccountCount:authUsers.length,
+    registeredUserCount:authUsers.filter((u:any)=>profileById.get(u.id)?.role!=='SUPER_ADMIN'&&profileById.get(u.id)?.role!=='ADMIN').length,
+    adminAccountCount:authUsers.filter((u:any)=>{
+      const p=profileById.get(u.id)
+      return p?.role==='SUPER_ADMIN'||p?.role==='ADMIN'
+    }).length,
+    profileOnlyCount:profileRows.filter((p:any)=>!authById.has(p.id)).length,
+    wallets:q[0].data||[], plans:q[2].data||[],
     deposits:q[3].data||[], withdrawals:q[4].data||[], investments:q[5].data||[],
     referrals:q[6].data||[], draws:q[7].data||[], notifications:q[8].data||[],
     accounts:q[9].data||[], payouts:q[10].data||[], ledger:q[11].data||[],
