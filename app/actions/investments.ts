@@ -12,16 +12,16 @@ async function getUserId() {
 }
 
 const FALLBACK_PLANS = [
-  ['Starter Prime', 1000000, 3, 100000, 1500], ['Mini Growth', 1500000, 5, 150000, 2000], ['Bronze Growth', 2500000, 7, 250000, 2500], ['Pioneer Vault', 3500000, 10, 350000, 3200],
-  ['Silver Vault', 5000000, 14, 500000, 4000], ['Pro Vault', 7500000, 20, 750000, 5500], ['Gold Vault', 10000000, 30, 1000000, 8000], ['Master Growth', 15000000, 35, 1500000, 9500],
-  ['Platinum Vault', 25000000, 45, 2000000, 12500], ['Diamond Executive', 50000000, 60, 3500000, 20000], ['Titan Executive', 75000000, 75, 4250000, 28000], ['Apex Prime', 100000000, 90, 5000000, 35000],
+  ['Starter Prime', 1000000, 3, 100000, 250000], ['Mini Growth', 1500000, 5, 150000, 450000], ['Bronze Growth', 2500000, 7, 250000, 925000], ['Pioneer Vault', 3500000, 10, 350000, 1600000],
+  ['Silver Vault', 5000000, 14, 500000, 2800000], ['Pro Vault', 7500000, 20, 750000, 5500000], ['Gold Vault', 10000000, 30, 1000000, 10000000], ['Master Growth', 15000000, 35, 1500000, 17000000],
+  ['Platinum Vault', 25000000, 45, 2000000, 35000000], ['Diamond Executive', 50000000, 60, 3500000, 100000000], ['Titan Executive', 75000000, 75, 4250000, 210000000], ['Apex Prime', 100000000, 90, 5000000, 350000000],
 ].map(([name, minimumMinor, durationDays, purchaseBonusMinor, returnBps], index) => ({ id: `00000000-0000-0000-0000-${String(index + 11).padStart(12, '0')}`, name, description: `${name} investment plan`, category: Number(durationDays) <= 5 ? 'DAILY' : Number(durationDays) <= 20 ? 'WEEKLY' : 'MONTHLY', minimumMinor, maximumMinor: minimumMinor, durationDays, purchaseBonusMinor, returnBps, active: true, displayOrder: index + 1 }))
 
 export async function getPublicPlans() {
   const supabase = await createClient()
   const { data, error } = await supabase.from('quantix_plans').select('*').eq('active', true).order('display_order', { ascending: true })
   const plans = error || !data?.length ? FALLBACK_PLANS : data
-  return plans.map((plan: any) => { const profit = Math.round(Number(plan.minimum_minor ?? plan.minimumMinor) * Number(plan.return_bps ?? plan.returnBps ?? 0) / 10000); return { ...plan, minimumMinor: Number(plan.minimum_minor ?? plan.minimumMinor), maximumMinor: Number(plan.maximum_minor ?? plan.maximumMinor), durationDays: Number(plan.duration_days ?? plan.durationDays), totalEarningsMinor: Number(plan.minimum_minor ?? plan.minimumMinor) + profit, dailyEarningsMinor: Math.round(profit / Number(plan.duration_days ?? plan.durationDays)), purchaseBonusMinor: Number(plan.purchase_bonus_minor ?? plan.purchaseBonusMinor ?? 0), status: 'OPEN' } })
+  return plans.map((plan: any) => { const profit = Math.round(Number(plan.minimum_minor ?? plan.minimumMinor) * Number(plan.return_bps ?? plan.returnBps ?? 0) / 10000); const returnMinor = Number(plan.return_minor ?? plan.returnMinor ?? profit); return { ...plan, minimumMinor: Number(plan.minimum_minor ?? plan.minimumMinor), maximumMinor: Number(plan.maximum_minor ?? plan.maximumMinor), durationDays: Number(plan.duration_days ?? plan.durationDays), returnMinor, totalEarningsMinor: Number(plan.minimum_minor ?? plan.minimumMinor) + returnMinor, dailyEarningsMinor: Math.round(returnMinor / Number(plan.duration_days ?? plan.durationDays)), purchaseBonusMinor: Number(plan.purchase_bonus_minor ?? plan.purchaseBonusMinor ?? 0), status: 'OPEN' } })
 }
 
 export async function getPaymentAccounts() {
