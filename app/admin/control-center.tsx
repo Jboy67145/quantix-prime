@@ -239,7 +239,7 @@ export default function ControlCenter(){
     </Panel>}
 
     {tab==='plans'&&<div className="grid gap-4 lg:grid-cols-[1fr_390px]">
-      <Panel title="Investment plans">{data.plans.map((x:any)=><Row key={x.id} title={x.name+' · '+(x.active&&!x.deleted_at?'LIVE':'ARCHIVED')} meta={x.category+' · '+x.duration_days+' days · Earn '+naira(x.return_minor ?? 0)+' · '+naira(x.minimum_minor)+'–'+naira(x.maximum_minor)}>
+      <Panel title="Investment plans">{data.plans.map((x:any)=><Row key={x.id} title={x.name+' · '+(x.active&&!x.deleted_at?'LIVE':'ARCHIVED')} meta={x.category+' · '+x.duration_days+' days · Earn '+naira(x.return_minor ?? 0)+' · Total '+naira(Number(x.minimum_minor||0)+Number(x.return_minor||0)+Number(x.purchase_bonus_minor||0))+' · '+naira(x.minimum_minor)+'–'+naira(x.maximum_minor)}>
        <button type="button" className="secondary-button" onClick={()=>setPlan({id:x.id,name:x.name,description:x.description,category:x.category,minimumMinor:Number(x.minimum_minor),maximumMinor:Number(x.maximum_minor),returnMinor:Number(x.return_minor ?? 0),durationDays:Number(x.duration_days),terms:x.terms,purchaseBonusMinor:Number(x.purchase_bonus_minor||0),active:x.active,displayOrder:x.display_order})}>Edit</button>
        <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>archivePlan(x.id,!x.deleted_at,'Admin plan status change'),x.deleted_at?'Plan restored.':'Plan archived.')}>{x.deleted_at?<RotateCcw size={15}/>:<Archive size={15}/>} {x.deleted_at?'Restore':'Archive'}</button>
       </Row>)}<button type="button" className="secondary-button mt-3" onClick={()=>setPlan({...emptyPlan})}>New plan</button></Panel>
