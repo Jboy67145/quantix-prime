@@ -6,82 +6,299 @@ import { requireAdminUser } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 
 async function ctx(){ return await requireAdminUser() }
+
 async function log(actor:any,action:string,type:string,id:string|null,before:any,after:any,reason?:string){
- const s=await createClient()
- await s.from('quantix_audit_logs').insert({actor_id:actor.user.id,actor_role:actor.profile.role,action,target_type:type,target_id:id,reason:reason||null,before_state:before||null,after_state:after||null})
-}
-export async function getAdminCenter(){
- await ctx(); const s=await createClient()
- const q=await Promise.all([
-  s.from('profiles').select('*').order('created_at',{ascending:false}).limit(200),
-  s.from('quantix_wallets').select('*').limit(200),
-  s.from('quantix_plans').select('*').order('display_order'),
-  s.from('quantix_deposits').select('*').order('created_at',{ascending:false}).limit(100),
-  s.from('quantix_withdrawals').select('*').order('created_at',{ascending:false}).limit(100),
-  s.from('quantix_investments').select('*').order('started_at',{ascending:false}).limit(200),
-  s.from('quantix_referrals').select('*').order('created_at',{ascending:false}).limit(200),
-  s.from('quantix_lucky_draws').select('*').order('created_at',{ascending:false}).limit(100),
-  s.from('quantix_notifications').select('*').order('created_at',{ascending:false}).limit(100),
-  s.from('quantix_payment_accounts').select('*').order('display_order'),
-  s.from('quantix_payout_accounts').select('*').order('created_at',{ascending:false}).limit(200),
-  s.from('quantix_ledger_entries').select('*').order('created_at',{ascending:false}).limit(200),
-  s.from('quantix_audit_logs').select('*').order('created_at',{ascending:false}).limit(200),
-  s.from('quantix_withdrawal_settings').select('*').limit(1)
- ])
- const e=q.find(x=>x.error); if(e?.error) throw new Error(e.error.message)
- return {profiles:q[0].data||[],wallets:q[1].data||[],plans:q[2].data||[],deposits:q[3].data||[],withdrawals:q[4].data||[],investments:q[5].data||[],referrals:q[6].data||[],draws:q[7].data||[],notifications:q[8].data||[],accounts:q[9].data||[],payouts:q[10].data||[],ledger:q[11].data||[],audits:q[12].data||[],settings:q[13].data?.[0]||null}
+  const s=await createClient()
+  const { error } = await s.from('quantix_audit_logs').insert({
+    actor_id:actor.user.id,
+    actor_role:actor.profile.role,
+    action,
+    target_type:type,
+    target_id:id,
+    reason:reason || null,
+    before_state:before || null,
+    after_state:after || null,
+  })
+  if (error) throw new Error(`Audit log failed: ${error.message}`)
 }
 
-const plan=z.object({id:z.string().uuid().optional(),name:z.string().min(2),description:z.string().min(2),category:z.enum(['DAILY','WEEKLY','MONTHLY']),minimumMinor:z.number().int().positive(),maximumMinor:z.number().int().positive(),returnBps:z.number().int().nonnegative(),durationDays:z.number().int().positive(),terms:z.string().min(2),purchaseBonusMinor:z.number().int().nonnegative(),active:z.boolean(),displayOrder:z.number().int().min(0)})
+export async function getAdminCenter(){
+  await ctx()
+  const s=await createClient()
+  const q=await Promise.all([
+    s.from('profiles').select('*').order('created_at',{ascending:false}).limit(500),
+    s.from('quantix_wallets').select('*').limit(500),
+    s.from('quantix_plans').select('*').order('display_order'),
+    s.from('quantix_deposits').select('*').order('created_at',{ascending:false}).limit(500),
+    s.from('quantix_withdrawals').select('*').order('created_at',{ascending:false}).limit(500),
+    s.from('quantix_investments').select('*').order('started_at',{ascending:false}).limit(500),
+    s.from('quantix_referrals').select('*').order('created_at',{ascending:false}).limit(500),
+    s.from('quantix_lucky_draws').select('*').order('created_at',{ascending:false}).limit(200),
+    s.from('quantix_notifications').select('*').order('created_at',{ascending:false}).limit(500),
+    s.from('quantix_payment_accounts').select('*').order('display_order'),
+    s.from('quantix_payout_accounts').select('*').order('created_at',{ascending:false}).limit(500),
+    s.from('quantix_ledger_entries').select('*').order('created_at',{ascending:false}).limit(500),
+    s.from('quantix_audit_logs').select('*').order('created_at',{ascending:false}).limit(500),
+    s.from('quantix_withdrawal_settings').select('*').limit(1),
+  ])
+  const failed=q.find(x=>x.error)
+  if(failed?.error) throw new Error(failed.error.message)
+  return {
+    profiles:q[0].data||[], wallets:q[1].data||[], plans:q[2].data||[],
+    deposits:q[3].data||[], withdrawals:q[4].data||[], investments:q[5].data||[],
+    referrals:q[6].data||[], draws:q[7].data||[], notifications:q[8].data||[],
+    accounts:q[9].data||[], payouts:q[10].data||[], ledger:q[11].data||[],
+    audits:q[12].data||[], settings:q[13].data?.[0]||null,
+  }
+}
+
+const uuid=z.string().uuid()
+const plan=z.object({
+  id:uuid.optional(),
+  name:z.string().trim().min(2).max(120),
+  description:z.string().trim().min(2).max(1000),
+  category:z.enum(['DAILY','WEEKLY','MONTHLY']),
+  minimumMinor:z.number().int().positive(),
+  maximumMinor:z.number().int().positive(),
+  returnBps:z.number().int().nonnegative(),
+  durationDays:z.number().int().positive().max(3650),
+  terms:z.string().trim().min(2).max(5000),
+  purchaseBonusMinor:z.number().int().nonnegative(),
+  active:z.boolean(),
+  displayOrder:z.number().int().min(0).max(9999),
+})
+
 export async function savePlan(input:z.input<typeof plan>){
- const a=await ctx(),d=plan.parse(input); if(d.maximumMinor<d.minimumMinor) throw new Error('Maximum must be at least minimum.')
- const s=await createClient(),before=d.id?(await s.from('quantix_plans').select('*').eq('id',d.id).maybeSingle()).data:null
- const p={name:d.name,description:d.description,category:d.category,minimum_minor:d.minimumMinor,maximum_minor:d.maximumMinor,return_bps:d.returnBps,duration_days:d.durationDays,terms:d.terms,purchase_bonus_minor:d.purchaseBonusMinor,active:d.active,display_order:d.displayOrder,deleted_at:null,updated_at:new Date().toISOString()}
- const r=d.id?await s.from('quantix_plans').update(p).eq('id',d.id).select().single():await s.from('quantix_plans').insert(p).select().single()
- if(r.error) throw new Error(r.error.message); await log(a,d.id?'PLAN_UPDATED':'PLAN_CREATED','PLAN',r.data.id,before,r.data); revalidatePath('/'); return r.data
+  const a=await ctx()
+  const d=plan.parse(input)
+  if(d.maximumMinor<d.minimumMinor) throw new Error('Maximum amount must be at least the minimum amount.')
+  const s=await createClient()
+  const before=d.id?(await s.from('quantix_plans').select('*').eq('id',d.id).maybeSingle()).data:null
+  const payload={
+    name:d.name,description:d.description,category:d.category,
+    minimum_minor:d.minimumMinor,maximum_minor:d.maximumMinor,return_bps:d.returnBps,
+    duration_days:d.durationDays,terms:d.terms,purchase_bonus_minor:d.purchaseBonusMinor,
+    active:d.active,display_order:d.displayOrder,deleted_at:null,updated_at:new Date().toISOString(),
+  }
+  const r=d.id
+    ? await s.from('quantix_plans').update(payload).eq('id',d.id).select().single()
+    : await s.from('quantix_plans').insert(payload).select().single()
+  if(r.error) throw new Error(r.error.message)
+  await log(a,d.id?'PLAN_UPDATED':'PLAN_CREATED','PLAN',r.data.id,before,r.data)
+  revalidatePath('/')
+  revalidatePath('/admin')
+  return r.data
 }
+
 export async function archivePlan(id:string,restore:boolean,reason:string){
- const a=await ctx(),i=z.string().uuid().parse(id),s=await createClient(),before=(await s.from('quantix_plans').select('*').eq('id',i).single()).data
- const p=restore?{active:true,deleted_at:null,updated_at:new Date().toISOString()}:{active:false,deleted_at:new Date().toISOString(),updated_at:new Date().toISOString()}
- const r=await s.from('quantix_plans').update(p).eq('id',i).select().single(); if(r.error)throw new Error(r.error.message)
- await log(a,restore?'PLAN_RESTORED':'PLAN_ARCHIVED','PLAN',i,before,r.data,reason); revalidatePath('/'); return r.data
+  const a=await ctx(),i=uuid.parse(id),s=await createClient()
+  const before=(await s.from('quantix_plans').select('*').eq('id',i).maybeSingle()).data
+  if(!before) throw new Error('Investment plan not found.')
+  const payload=restore
+    ? {active:true,deleted_at:null,updated_at:new Date().toISOString()}
+    : {active:false,deleted_at:new Date().toISOString(),updated_at:new Date().toISOString()}
+  const r=await s.from('quantix_plans').update(payload).eq('id',i).select().single()
+  if(r.error) throw new Error(r.error.message)
+  await log(a,restore?'PLAN_RESTORED':'PLAN_ARCHIVED','PLAN',i,before,r.data,reason)
+  revalidatePath('/')
+  revalidatePath('/admin')
+  return r.data
 }
+
+const userProfile=z.object({
+  id:uuid,
+  name:z.string().trim().min(2).max(120),
+  username:z.string().trim().min(2).max(80).regex(/^[a-zA-Z0-9_.-]+$/),
+})
+export async function updateUserProfile(input:z.input<typeof userProfile>){
+  const a=await ctx(),d=userProfile.parse(input),s=await createClient()
+  const before=(await s.from('profiles').select('*').eq('id',d.id).maybeSingle()).data
+  if(!before) throw new Error('User profile not found.')
+  const r=await s.from('profiles').update({name:d.name,username:d.username,updated_at:new Date().toISOString()}).eq('id',d.id).select().single()
+  if(r.error){
+    if(r.error.code==='23505') throw new Error('That username is already in use.')
+    throw new Error(r.error.message)
+  }
+  await log(a,'USER_PROFILE_UPDATED','USER',d.id,before,r.data,'Administrative profile edit')
+  revalidatePath('/admin')
+  revalidatePath('/')
+  return r.data
+}
+
 export async function setUserState(id:string,status:'ACTIVE'|'SUSPENDED'|'RESTRICTED',reason:string){
- const a=await ctx(),i=z.string().uuid().parse(id),s=await createClient(),before=(await s.from('profiles').select('*').eq('id',i).single()).data
- const r=await s.from('profiles').update({status,suspended_at:status==='ACTIVE'?null:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',i).select().single()
- if(r.error)throw new Error(r.error.message); await log(a,'USER_STATUS_CHANGED','USER',i,before,r.data,reason); return r.data
+  const a=await ctx(),i=uuid.parse(id),s=await createClient()
+  if(i===a.user.id && status!=='ACTIVE') throw new Error('You cannot suspend or restrict the currently signed-in administrator.')
+  const before=(await s.from('profiles').select('*').eq('id',i).maybeSingle()).data
+  if(!before) throw new Error('User profile not found.')
+  const r=await s.from('profiles').update({
+    status,
+    suspended_at:status==='ACTIVE'?null:new Date().toISOString(),
+    updated_at:new Date().toISOString(),
+  }).eq('id',i).select().single()
+  if(r.error) throw new Error(r.error.message)
+  await log(a,'USER_STATUS_CHANGED','USER',i,before,r.data,reason)
+  revalidatePath('/admin')
+  revalidatePath('/')
+  return r.data
 }
-export async function savePolicy(input:any){
- const a=await ctx(),s=await createClient(),old=(await s.from('quantix_withdrawal_settings').select('*').limit(1).maybeSingle()).data
- const p={timezone:input.timezone,enabled_days:input.enabledDays,start_time:input.startTime,end_time:input.endTime,minimum_minor:Number(input.minimumMinor),maximum_minor:input.maximumMinor==null?null:Number(input.maximumMinor),enabled:Boolean(input.enabled),updated_at:new Date().toISOString()}
- const r=old?await s.from('quantix_withdrawal_settings').update(p).eq('id',old.id).select().single():await s.from('quantix_withdrawal_settings').insert(p).select().single()
- if(r.error)throw new Error(r.error.message); await log(a,'WITHDRAWAL_POLICY_UPDATED','WITHDRAWAL_SETTINGS',r.data.id,old,r.data); return r.data
+
+const policy=z.object({
+  timezone:z.string().trim().min(1).max(80),
+  enabledDays:z.array(z.enum(['MON','TUE','WED','THU','FRI','SAT','SUN'])).min(1),
+  startTime:z.string().regex(/^([01]\\d|2[0-3]):[0-5]\\d$/),
+  endTime:z.string().regex(/^([01]\\d|2[0-3]):[0-5]\\d$/),
+  minimumMinor:z.number().int().nonnegative(),
+  maximumMinor:z.number().int().positive().nullable(),
+  enabled:z.boolean(),
+})
+export async function savePolicy(input:z.input<typeof policy>){
+  const a=await ctx(),d=policy.parse(input),s=await createClient()
+  if(d.maximumMinor!==null && d.maximumMinor<d.minimumMinor) throw new Error('Maximum withdrawal must be at least the minimum.')
+  const old=(await s.from('quantix_withdrawal_settings').select('*').limit(1).maybeSingle()).data
+  const payload={
+    timezone:d.timezone,enabled_days:d.enabledDays,start_time:d.startTime,end_time:d.endTime,
+    minimum_minor:d.minimumMinor,maximum_minor:d.maximumMinor,enabled:d.enabled,updated_at:new Date().toISOString(),
+  }
+  const r=old
+    ? await s.from('quantix_withdrawal_settings').update(payload).eq('id',old.id).select().single()
+    : await s.from('quantix_withdrawal_settings').insert(payload).select().single()
+  if(r.error) throw new Error(r.error.message)
+  await log(a,'WITHDRAWAL_POLICY_UPDATED','WITHDRAWAL_SETTINGS',r.data.id,old,r.data)
+  revalidatePath('/admin')
+  revalidatePath('/')
+  return r.data
 }
+
+const notification=z.object({
+  userId:uuid.nullable(),
+  title:z.string().trim().min(2).max(160),
+  body:z.string().trim().min(2).max(4000),
+  type:z.string().trim().min(2).max(40),
+})
 export async function sendAdminNotification(userId:string|null,title:string,body:string,type:string){
- const a=await ctx(),s=await createClient()
- if(userId){const r=await s.from('quantix_notifications').insert({user_id:userId,title,body,type}).select().single();if(r.error)throw new Error(r.error.message);await log(a,'USER_NOTIFICATION_SENT','NOTIFICATION',r.data.id,null,r.data)}
- else{const u=(await s.from('profiles').select('id').eq('status','ACTIVE')).data||[];if(u.length){const r=await s.from('quantix_notifications').insert(u.map(x=>({user_id:x.id,title,body,type})));if(r.error)throw new Error(r.error.message)}await log(a,'BROADCAST_NOTIFICATION_SENT','NOTIFICATION',null,null,{count:u.length,title,body})}
- revalidatePath('/'); return true
+  const a=await ctx(),d=notification.parse({userId,title,body,type}),s=await createClient()
+  if(d.userId){
+    const r=await s.from('quantix_notifications').insert({user_id:d.userId,title:d.title,body:d.body,type:d.type}).select().single()
+    if(r.error) throw new Error(r.error.message)
+    await log(a,'USER_NOTIFICATION_SENT','NOTIFICATION',r.data.id,null,r.data)
+  }else{
+    const u=(await s.from('profiles').select('id').eq('status','ACTIVE')).data||[]
+    if(u.length){
+      const r=await s.from('quantix_notifications').insert(u.map(x=>({user_id:x.id,title:d.title,body:d.body,type:d.type})))
+      if(r.error) throw new Error(r.error.message)
+    }
+    await log(a,'BROADCAST_NOTIFICATION_SENT','NOTIFICATION',null,null,{count:u.length,title:d.title,body:d.body,type:d.type})
+  }
+  revalidatePath('/')
+  revalidatePath('/admin')
+  return true
 }
-export async function createDraw(input:any){
- const a=await ctx(),s=await createClient()
- const d=z.object({title:z.string().min(2),description:z.string(),rewardType:z.enum(['CASH','ALTERNATE']),rewardMinor:z.number().int().nonnegative(),alternateReward:z.string(),entryCostMinor:z.number().int().nonnegative(),opensAt:z.string(),closesAt:z.string()}).parse(input)
- const r=await s.from('quantix_lucky_draws').insert({title:d.title,description:d.description,reward_type:d.rewardType,reward_minor:d.rewardMinor,alternate_reward:d.alternateReward||null,entry_cost_minor:d.entryCostMinor,opens_at:new Date(d.opensAt).toISOString(),closes_at:new Date(d.closesAt).toISOString(),status:'OPEN'}).select().single()
- if(r.error)throw new Error(r.error.message);await log(a,'LUCKY_DRAW_CREATED','LUCKY_DRAW',r.data.id,null,r.data);return r.data
+
+const draw=z.object({
+  id:uuid.optional(),
+  title:z.string().trim().min(2).max(160),
+  description:z.string().trim().max(2000),
+  rewardType:z.enum(['CASH','ALTERNATE']),
+  rewardMinor:z.number().int().nonnegative(),
+  alternateReward:z.string().trim().max(500),
+  entryCostMinor:z.number().int().nonnegative(),
+  opensAt:z.string().min(1),
+  closesAt:z.string().min(1),
+})
+export async function createDraw(input:z.input<typeof draw>){
+  const a=await ctx(),d=draw.omit({id:true}).parse(input),s=await createClient()
+  const opens=new Date(d.opensAt),closes=new Date(d.closesAt)
+  if(Number.isNaN(opens.getTime())||Number.isNaN(closes.getTime())||closes<=opens) throw new Error('Choose valid opening and closing times; closing must be after opening.')
+  if(d.rewardType==='CASH' && d.rewardMinor<=0) throw new Error('Cash draws need a reward greater than ₦0.')
+  const r=await s.from('quantix_lucky_draws').insert({
+    title:d.title,description:d.description,reward_type:d.rewardType,reward_minor:d.rewardMinor,
+    alternate_reward:d.alternateReward||null,entry_cost_minor:d.entryCostMinor,
+    opens_at:opens.toISOString(),closes_at:closes.toISOString(),status:'OPEN',
+  }).select().single()
+  if(r.error) throw new Error(r.error.message)
+  await log(a,'LUCKY_DRAW_CREATED','LUCKY_DRAW',r.data.id,null,r.data)
+  revalidatePath('/')
+  revalidatePath('/admin')
+  return r.data
+}
+export async function updateDraw(input:z.input<typeof draw>){
+  const a=await ctx(),d=draw.parse(input),s=await createClient()
+  if(!d.id) throw new Error('Draw ID is required for editing.')
+  const opens=new Date(d.opensAt),closes=new Date(d.closesAt)
+  if(Number.isNaN(opens.getTime())||Number.isNaN(closes.getTime())||closes<=opens) throw new Error('Choose valid opening and closing times; closing must be after opening.')
+  const before=(await s.from('quantix_lucky_draws').select('*').eq('id',d.id).maybeSingle()).data
+  if(!before) throw new Error('Lucky Wish draw not found.')
+  const r=await s.from('quantix_lucky_draws').update({
+    title:d.title,description:d.description,reward_type:d.rewardType,reward_minor:d.rewardMinor,
+    alternate_reward:d.alternateReward||null,entry_cost_minor:d.entryCostMinor,
+    opens_at:opens.toISOString(),closes_at:closes.toISOString(),updated_at:new Date().toISOString(),
+  }).eq('id',d.id).select().single()
+  if(r.error) throw new Error(r.error.message)
+  await log(a,'LUCKY_DRAW_UPDATED','LUCKY_DRAW',d.id,before,r.data)
+  revalidatePath('/')
+  revalidatePath('/admin')
+  return r.data
 }
 export async function toggleDraw(id:string,open:boolean){
- const a=await ctx(),s=await createClient(),i=z.string().uuid().parse(id),before=(await s.from('quantix_lucky_draws').select('*').eq('id',i).single()).data
- const r=await s.from('quantix_lucky_draws').update({status:open?'OPEN':'CLOSED',updated_at:new Date().toISOString()}).eq('id',i).select().single();if(r.error)throw new Error(r.error.message)
- await log(a,'LUCKY_DRAW_STATUS_CHANGED','LUCKY_DRAW',i,before,r.data);return r.data
+  const a=await ctx(),s=await createClient(),i=uuid.parse(id)
+  const before=(await s.from('quantix_lucky_draws').select('*').eq('id',i).maybeSingle()).data
+  if(!before) throw new Error('Lucky Wish draw not found.')
+  const r=await s.from('quantix_lucky_draws').update({status:open?'OPEN':'CLOSED',updated_at:new Date().toISOString()}).eq('id',i).select().single()
+  if(r.error) throw new Error(r.error.message)
+  await log(a,'LUCKY_DRAW_STATUS_CHANGED','LUCKY_DRAW',i,before,r.data)
+  revalidatePath('/')
+  revalidatePath('/admin')
+  return r.data
 }
 
 export async function updateReferral(id:string,status:'PENDING'|'QUALIFIED',rewardMinor:number,reason:string){
- const a=await ctx(),i=z.string().uuid().parse(id),s=await createClient(),before=(await s.from('quantix_referrals').select('*').eq('id',i).single()).data
- const r=await s.from('quantix_referrals').update({status,reward_minor:Math.max(0,Math.trunc(rewardMinor)),qualified_at:status==='QUALIFIED'?new Date().toISOString():null}).eq('id',i).select().single()
- if(r.error)throw new Error(r.error.message);await log(a,'REFERRAL_UPDATED','REFERRAL',i,before,r.data,reason);return r.data
+  const a=await ctx(),i=uuid.parse(id),s=await createClient()
+  if(!Number.isInteger(rewardMinor)||rewardMinor<0) throw new Error('Referral reward must be a non-negative whole minor-unit amount.')
+  const before=(await s.from('quantix_referrals').select('*').eq('id',i).maybeSingle()).data
+  if(!before) throw new Error('Referral record not found.')
+  const r=await s.from('quantix_referrals').update({
+    status,reward_minor:Math.max(0,Math.trunc(rewardMinor)),
+    qualified_at:status==='QUALIFIED'?new Date().toISOString():null,
+  }).eq('id',i).select().single()
+  if(r.error) throw new Error(r.error.message)
+  await log(a,'REFERRAL_UPDATED','REFERRAL',i,before,r.data,reason)
+  revalidatePath('/')
+  revalidatePath('/admin')
+  return r.data
 }
+
 export async function archivePayout(id:string,reason:string){
- const a=await ctx(),i=z.string().uuid().parse(id),s=await createClient(),before=(await s.from('quantix_payout_accounts').select('*').eq('id',i).single()).data
- const r=await s.from('quantix_payout_accounts').update({deleted_at:new Date().toISOString(),is_default:false}).eq('id',i).select().single()
- if(r.error)throw new Error(r.error.message);await log(a,'PAYOUT_ACCOUNT_ARCHIVED','PAYOUT_ACCOUNT',i,before,r.data,reason);return r.data
+  const a=await ctx(),i=uuid.parse(id),s=await createClient()
+  const before=(await s.from('quantix_payout_accounts').select('*').eq('id',i).maybeSingle()).data
+  if(!before) throw new Error('Payout account not found.')
+  const r=await s.from('quantix_payout_accounts').update({deleted_at:new Date().toISOString(),is_default:false}).eq('id',i).select().single()
+  if(r.error) throw new Error(r.error.message)
+  await log(a,'PAYOUT_ACCOUNT_ARCHIVED','PAYOUT_ACCOUNT',i,before,r.data,reason)
+  revalidatePath('/admin')
+  return r.data
+}
+
+export async function restorePayout(id:string,reason:string){
+  const a=await ctx(),i=uuid.parse(id),s=await createClient()
+  const before=(await s.from('quantix_payout_accounts').select('*').eq('id',i).maybeSingle()).data
+  if(!before) throw new Error('Payout account not found.')
+  const r=await s.from('quantix_payout_accounts').update({deleted_at:null}).eq('id',i).select().single()
+  if(r.error) throw new Error(r.error.message)
+  await log(a,'PAYOUT_ACCOUNT_RESTORED','PAYOUT_ACCOUNT',i,before,r.data,reason)
+  revalidatePath('/admin')
+  return r.data
+}
+
+export async function processInvestmentMaturity(id:string){
+  const a=await ctx(),i=uuid.parse(id),s=await createClient()
+  const before=(await s.from('quantix_investments').select('*').eq('id',i).maybeSingle()).data
+  if(!before) throw new Error('Investment not found.')
+  if(before.status!=='ACTIVE') throw new Error('This investment is no longer active.')
+  if(new Date(before.matures_at).getTime()>Date.now()) throw new Error('This investment has not reached maturity yet.')
+  const { data: result, error } = await s.rpc('process_maturity_atomic',{p_investment_id:i})
+  if(error||!result) throw new Error(error?.message||'Maturity could not be processed.')
+  await log(a,'INVESTMENT_MATURED_MANUALLY','INVESTMENT',i,before,result,'Administrator triggered due maturity processing')
+  revalidatePath('/admin')
+  revalidatePath('/')
+  return result
 }
