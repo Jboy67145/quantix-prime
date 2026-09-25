@@ -336,14 +336,33 @@ export async function toggleDraw(id:string,open:boolean){
 export async function updateReferral(id:string,status:'PENDING'|'QUALIFIED',rewardMinor:number,reason:string){
   const a=await ctx(),i=uuid.parse(id),s=await createClient()
   if(!Number.isInteger(rewardMinor)||rewardMinor<0) throw new Error('Referral reward must be a non-negative whole minor-unit amount.')
+
   const before=(await s.from('quantix_referrals').select('*').eq('id',i).maybeSingle()).data
   if(!before) throw new Error('Referral record not found.')
+
+  if(status==='QUALIFIED'){
+    const { data, error } = await s.rpc('qualify_referral_atomic',{
+      p_referral_id:i,
+      p_reward_minor:Math.max(0,Math.trunc(rewardMinor)),
+      p_reason:reason,
+    })
+    if(error || !data) throw new Error(error?.message || 'Unable to qualify and pay this referral.')
+    revalidatePath('/')
+    revalidatePath('/admin')
+    return data
+  }
+
+  if(before.status==='QUALIFIED'){
+    throw new Error('A qualified referral has already been paid and cannot be reset.')
+  }
+
   const r=await s.from('quantix_referrals').update({
-    status,reward_minor:Math.max(0,Math.trunc(rewardMinor)),
-    qualified_at:status==='QUALIFIED'?new Date().toISOString():null,
+    status:'PENDING',
+    reward_minor:Math.max(0,Math.trunc(rewardMinor)),
+    qualified_at:null,
   }).eq('id',i).select().single()
   if(r.error) throw new Error(r.error.message)
-  await log(a,'REFERRAL_UPDATED','REFERRAL',i,before,r.data,reason)
+  await log(a,'REFERRAL_RESET','REFERRAL',i,before,r.data,reason)
   revalidatePath('/')
   revalidatePath('/admin')
   return r.data
