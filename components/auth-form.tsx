@@ -44,7 +44,7 @@ export function AuthForm({
         setPending(false)
         return
       }
-      if (isSignUp && !result.data.session) {
+      if (isSignUp && !result.data?.session) {
         setConfirmationPending(true)
         setError('Account created. Check your email to confirm your account.')
         setPending(false)
