@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect,useMemo,useState } from 'react'
-import { ArrowLeft, RefreshCw, Shield, Users, Wallet, TrendingUp, Landmark, Gift, Bell, ScrollText, Settings, Archive, RotateCcw, Save, Send, Search, CheckCircle2, Clock3 } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Shield, Users, Wallet, TrendingUp, Landmark, Gift, Bell, ScrollText, Settings, Archive, RotateCcw, Save, Send, Search, CheckCircle2, Clock3, Copy, Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import {
   getAdminCenter,savePlan,archivePlan,setUserState,savePolicy,sendAdminNotification,
@@ -36,6 +36,7 @@ export default function ControlCenter(){
  const [policy,setPolicy]=useState<any>(emptyPolicy)
  const [msg,setMsg]=useState<any>({userId:'',title:'',body:'',type:'SYSTEM'})
  const [draw,setDraw]=useState<any>(emptyDraw)
+ const [copied,setCopied]=useState('')
 
  const load=async()=>{
    try{
@@ -59,6 +60,8 @@ export default function ControlCenter(){
 
  const users=useMemo(()=>data?.profiles?.filter((u:any)=>(String(u.name)+' '+String(u.username)+' '+u.id).toLowerCase().includes(q.toLowerCase()))||[],[data,q])
  const walletForUser=selectedUser?data?.wallets?.find((w:any)=>w.user_id===selectedUser.id):null
+ const copyValue=async(key:string,value:any)=>{try{await navigator.clipboard.writeText(String(value??''));setCopied(key);window.setTimeout(()=>setCopied(''),1400)}catch{setError('Unable to copy this value. You can select the text manually.')}}
+ const withdrawalAccount=(x:any)=>x.payout_account_snapshot||data.payouts?.find((p:any)=>p.id===x.payout_account_id)||{}
 
  function selectUser(u:any){
    if(!u){setSelectedUser(null);setProfile({name:'',username:''});return}
@@ -162,9 +165,30 @@ export default function ControlCenter(){
     </Panel>}
 
     {tab==='withdrawals'&&<Panel title="All withdrawals">
-      {data.withdrawals.map((x:any)=><Row key={x.id} title={x.status+' · '+naira(x.amount_minor)} meta={x.user_id+' · net '+naira(x.net_minor)+' · '+date(x.created_at)}>
-       {x.status==='PENDING'&&<><button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewWithdrawal(x.id,'APPROVED',reason),'Withdrawal approved.')}>Approve</button><button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewWithdrawal(x.id,'REJECTED',reason),'Withdrawal rejected.')}>Reject</button></>}
-      </Row>)}
+      {data.withdrawals.map((x:any)=>{
+       const a=withdrawalAccount(x)
+       const accountName=a.account_name||a.accountName||'—'
+       const bankName=a.bank_name||a.bankName||'—'
+       const accountNumber=a.account_number||a.accountNumber||'—'
+       const copyBtn=(key:string,value:string,label:string)=><button type="button" className="secondary-button" aria-label={`Copy ${label}`} title={`Copy ${label}`} onClick={()=>copyValue(key,value)}>{copied===key?<Check size={15}/>:<Copy size={15}/>}<span>{copied===key?'Copied':label}</span></button>
+       return <Row key={x.id} title={x.status+' · '+naira(x.amount_minor)} meta={x.user_id+' · net '+naira(x.net_minor)+' · '+date(x.created_at)}>
+        <div className="w-full rounded-2xl border border-white/10 bg-black/30 p-4">
+         <div className="mb-3 text-sm font-semibold">Submitted payout account</div>
+         <div className="grid gap-3 sm:grid-cols-3">
+          <div><div className="text-xs opacity-60">Account name</div><div className="mt-1 break-words font-medium">{accountName}</div><div className="mt-2">{copyBtn(x.id+':name',accountName,'Copy name')}</div></div>
+          <div><div className="text-xs opacity-60">Bank</div><div className="mt-1 break-words font-medium">{bankName}</div><div className="mt-2">{copyBtn(x.id+':bank',bankName,'Copy bank')}</div></div>
+          <div><div className="text-xs opacity-60">Account number</div><div className="mt-1 break-all font-medium">{accountNumber}</div><div className="mt-2">{copyBtn(x.id+':number',accountNumber,'Copy account number')}</div></div>
+         </div>
+         <div className="mt-3 border-t border-white/10 pt-3">
+          <div className="text-xs opacity-60">Amount to pay</div>
+          <div className="mt-1 text-lg font-semibold">{naira(x.net_minor)}</div>
+          <div className="mt-2">{copyBtn(x.id+':amount',naira(x.net_minor),'Copy amount')}</div>
+         </div>
+         <p className="mt-3 text-xs opacity-50">The account details above are the snapshot submitted with this withdrawal request. Use these details for this payment even if the user's payout account is later changed.</p>
+        </div>
+        {x.status==='PENDING'&&<><button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewWithdrawal(x.id,'APPROVED',reason),'Withdrawal approved.')}>Approve</button><button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewWithdrawal(x.id,'REJECTED',reason),'Withdrawal rejected.')}>Reject</button></>}
+       </Row>
+      })}
       {!data.withdrawals.length&&<Empty text="No withdrawals yet."/>}
     </Panel>}
 
