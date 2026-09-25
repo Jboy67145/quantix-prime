@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Bell, Check, Copy, Gift, Home as HomeIcon, LogOut, Moon, RefreshCw, ShieldCheck, Sun, TrendingUp, Users, Wallet, X, Zap } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { signOut } from '@/lib/auth-client'
@@ -34,7 +34,7 @@ export default function Page() {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [marquees, setMarquees] = useState<any[]>([])
   const [newNotice, setNewNotice] = useState<Notice | null>(null)
-  const [notificationBootstrapped, setNotificationBootstrapped] = useState(false)
+  const notificationBootstrapped = useRef(false)
 
   const notify = (text: string) => {
     setToast(text)
@@ -65,13 +65,13 @@ export default function Page() {
         const next = (await getNotifications()) as Notice[]
         setNotices(current => {
           const currentIds = new Set(current.map(n => n.id))
-          if (notificationBootstrapped && next.length) {
+          if (notificationBootstrapped.current && next.length) {
             const fresh = next.find(n => !currentIds.has(n.id))
             if (fresh) setNewNotice(fresh)
           }
           return next
         })
-        setNotificationBootstrapped(true)
+        notificationBootstrapped.current = true
       } catch {}
     }
     const refreshMarquees = () => getMarqueeHighlights().then((v) => setMarquees(v as any[])).catch(() => {})
