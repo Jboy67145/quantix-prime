@@ -58,7 +58,7 @@ export default function ControlCenter(){
    finally{setBusy('')}
  }
 
- const users=useMemo(()=>data?.profiles?.filter((u:any)=>(String(u.name)+' '+String(u.username)+' '+u.id).toLowerCase().includes(q.toLowerCase()))||[],[data,q])
+ const users=useMemo(()=>{const term=q.trim().toLowerCase(); return data?.profiles?.filter((u:any)=>!term||[u.name,u.username,u.email,u.id].some((v:any)=>String(v||'').toLowerCase().includes(term)))||[]},[data,q])
  const walletForUser=selectedUser?data?.wallets?.find((w:any)=>w.user_id===selectedUser.id):null
  const copyValue=async(key:string,value:any)=>{try{await navigator.clipboard.writeText(String(value??''));setCopied(key);window.setTimeout(()=>setCopied(''),1400)}catch{setError('Unable to copy this value. You can select the text manually.')}}
  const withdrawalAccount=(x:any)=>x.payout_account_snapshot||data.payouts?.find((p:any)=>p.id===x.payout_account_id)||{}
@@ -119,8 +119,8 @@ export default function ControlCenter(){
       <Panel title="Recent audit activity">{data.audits.slice(0,20).map((x:any)=><Row key={x.id} title={x.action} meta={x.target_type+' · '+date(x.created_at)}/>)}</Panel>
     </div>}
 
-    {tab==='users'&&<Panel title="User accounts">
-      <div className="mb-4 flex gap-2"><Search className="mt-3 opacity-50"/><input className="account-form flex-1" placeholder="Search name, username or UUID" value={q} onChange={e=>setQ(e.target.value)}/></div>
+    {tab==='users'&&<Panel title={`User accounts · ${data.profiles.length}`}>
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row"><div className="flex flex-1 gap-2"><Search className="mt-3 opacity-50"/><input className="account-form flex-1" placeholder="Search name, username, email or UUID" value={q} onChange={e=>setQ(e.target.value)}/></div><div className="secondary-button"><Users size={15}/>{users.length} shown</div></div>
       {users.map((u:any)=><Row key={u.id} title={(u.name||'Unnamed')+' · '+(u.username||'No username')} meta={u.status+' · '+u.role+' · '+u.id}>
        <button type="button" className="primary-button" onClick={()=>selectUser(u)}>Manage</button>
        {u.status==='ACTIVE'
