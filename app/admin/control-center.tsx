@@ -276,7 +276,7 @@ export default function ControlCenter(){
           aria-label="Referral reward in minor units"
         />
         <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>updateReferral(x.id,'QUALIFIED',Number(referralRewards[x.id] ?? x.reward_minor ?? 0),'Admin marked referral qualified and paid reward'),'Referral qualified and reward paid.')}>Mark qualified & pay</button>
-       </div>}
+       </>}
       </Row>) }
       {!data.referrals.length&&<Empty text="No referrals yet."/>}
     </Panel>
