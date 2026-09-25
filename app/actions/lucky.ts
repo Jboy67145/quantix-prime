@@ -17,11 +17,31 @@ export async function getOpenDraws() {
   const userId = user.id
   const supabase = await createClient()
   const now = new Date().toISOString()
-  const { data: draws, error } = await supabase.from('quantix_lucky_draws').select('*').eq('status', 'OPEN').lte('opens_at', now).gte('closes_at', now).order('closes_at', { ascending: false })
+  const { data: draws, error } = await supabase
+    .from('quantix_lucky_draws')
+    .select('id,title,description,reward_type,reward_minor,alternate_reward,entry_cost_minor,opens_at,closes_at,status')
+    .eq('status', 'OPEN')
+    .lte('opens_at', now)
+    .gt('closes_at', now)
+    .order('closes_at', { ascending: true })
   if (error) throw new Error('Unable to load Lucky Wish draws')
   const { data: entries } = await supabase.from('quantix_lucky_entries').select('id, draw_id').eq('user_id', userId)
   const entryMap = new Map((entries ?? []).map((entry) => [entry.draw_id, entry.id]))
-  return (draws ?? []).map((draw) => ({ draw, entryId: entryMap.get(draw.id) ?? null }))
+  return (draws ?? []).map((draw) => ({
+    draw: {
+      id: draw.id,
+      title: draw.title,
+      description: draw.description,
+      rewardType: draw.reward_type,
+      rewardMinor: draw.reward_minor,
+      alternateReward: draw.alternate_reward,
+      entryCostMinor: draw.entry_cost_minor,
+      opensAt: draw.opens_at,
+      closesAt: draw.closes_at,
+      status: draw.status,
+    },
+    entryId: entryMap.get(draw.id) ?? null,
+  }))
 }
 
 export async function joinDraw(drawId: string) {
