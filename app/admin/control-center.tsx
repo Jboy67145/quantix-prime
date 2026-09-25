@@ -61,6 +61,7 @@ export default function ControlCenter(){
  const walletForUser=selectedUser?data?.wallets?.find((w:any)=>w.user_id===selectedUser.id):null
 
  function selectUser(u:any){
+   if(!u){setSelectedUser(null);setProfile({name:'',username:''});return}
    setSelectedUser(u); setProfile({name:u.name||'',username:u.username||''}); setTab('wallet'); setError(''); setSuccess('')
  }
 
