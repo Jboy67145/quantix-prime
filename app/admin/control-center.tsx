@@ -255,7 +255,7 @@ export default function ControlCenter(){
       {data.referrals.map((x:any)=><Row key={x.id} title={x.status+' · '+naira(x.reward_minor)} meta={x.referrer_user_id+' → '+x.referred_user_id+' · '+date(x.created_at)}>
        {x.status==='PENDING'&&<>
         <input
-          className="admin-input max-w-40"
+          className="w-40 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm"
           type="number"
           min="1"
           step="1"
