@@ -58,7 +58,7 @@ export async function getReferralSnapshot() {
     referrals: rows,
     earned: rows.filter((row: any) => row.status === 'QUALIFIED').reduce((sum: number, row: any) => sum + row.rewardMinor, 0),
     pending: rows.filter((row: any) => row.status !== 'QUALIFIED').reduce((sum: number, row: any) => sum + row.rewardMinor, 0),
-    link: profile?.invite_code ? '\`${getAppUrl()}\/sign-up?ref=\${encodeURIComponent(profile.invite_code)}\`' : '',
+    link: profile?.invite_code ? `${getAppUrl()}/sign-up?ref=${encodeURIComponent(profile.invite_code)}` : '',
   }
 }
 
