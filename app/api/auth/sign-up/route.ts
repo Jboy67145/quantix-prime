@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const password = String(body?.password || '')
     const name = cleanText(body?.name, 120)
     const username = cleanText(body?.username, 24).toLowerCase()
-    const referralCode = cleanText(body?.referralCode, 32).toLowerCase()
+    const referralCode = cleanText(body?.referralCode, 32).toUpperCase()
 
     if (password.length < 8 || password.length > 72) {
       return NextResponse.json({ error: 'Password must be between 8 and 72 characters.' }, { status: 400 })
@@ -49,26 +49,36 @@ export async function POST(request: Request) {
 
     const user = data.user
 
-    if (/^[a-z0-9_]{3,32}$/.test(referralCode)) {
-      const { data: referrer } = await admin
+    if (/^[A-Z0-9_]{3,32}$/.test(referralCode)) {
+      const { data: profile } = await admin
         .from('profiles')
-        .select('id')
-        .eq('invite_code', referralCode)
-        .neq('id', user.id)
+        .select('id, invite_code, referred_by_code')
+        .eq('id', user.id)
         .maybeSingle()
 
-      if (referrer) {
-        await admin.from('profiles').update({ referred_by_code: referralCode }).eq('id', user.id)
-        await admin.from('quantix_referrals').upsert(
-          {
+      // Referral is optional and can only be attached once.
+      if (!profile?.referred_by_code) {
+        const { data: referrer } = await admin
+          .from('profiles')
+          .select('id, invite_code')
+          .ilike('invite_code', referralCode)
+          .neq('id', user.id)
+          .maybeSingle()
+
+        if (referrer) {
+          await admin.from('profiles')
+            .update({ referred_by_code: referrer.invite_code })
+            .eq('id', user.id)
+            .is('referred_by_code', null)
+
+          await admin.from('quantix_referrals').insert({
             referrer_user_id: referrer.id,
             referred_user_id: user.id,
-            invite_code: referralCode,
+            invite_code: referrer.invite_code,
             reward_minor: 0,
             status: 'PENDING',
-          },
-          { onConflict: 'referred_user_id' },
-        )
+          })
+        }
       }
     }
 
