@@ -213,7 +213,7 @@ export default function ControlCenter(){
          </div>
          <p className="mt-3 text-xs opacity-50">The account details above are the snapshot submitted with this withdrawal request. Use these details for this payment even if the user's payout account is later changed.</p>
         </div>
-        {x.status==='PENDING'&&<><button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewWithdrawal(x.id,'APPROVED',reason),'Withdrawal approved.')}>Approve</button><button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewWithdrawal(x.id,'REJECTED',reason),'Withdrawal rejected.')}>Reject</button></>}
+        {x.status==='PENDING'&&<div className="flex flex-wrap items-center gap-2"><button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewWithdrawal(x.id,'APPROVED',reason),'Withdrawal approved.')}>Approve</button><button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewWithdrawal(x.id,'REJECTED',reason),'Withdrawal rejected.')}>Reject</button></>}
        </Row>
       })}
       {!data.withdrawals.length&&<Empty text="No withdrawals yet."/>}
@@ -266,8 +266,8 @@ export default function ControlCenter(){
           aria-label="Referral reward in minor units"
         />
         <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>updateReferral(x.id,'QUALIFIED',Number(referralRewards[x.id] ?? x.reward_minor ?? 0),'Admin marked referral qualified and paid reward'),'Referral qualified and reward paid.')}>Mark qualified & pay</button>
-       </>}
-      </Row>)}
+       </div>}
+      </Row>) }
       {!data.referrals.length&&<Empty text="No referrals yet."/>}
     </Panel>
 
