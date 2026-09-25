@@ -184,7 +184,12 @@ export default function ControlCenter(){
          </div>
          <div className="mt-3 text-xs opacity-60">Proof file: {x.payment_proof_name||'—'}</div>
         </div>
-        {x.status==='PENDING'&&<div className="flex flex-wrap items-center gap-2"><button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewDeposit({id:x.id,status:'APPROVED'}),'Deposit approved.')}>Approve</button><button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewDeposit({id:x.id,status:'REJECTED',reason}),'Deposit rejected.')}>Reject</button></>}
+        {x.status==='PENDING'&&(
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewDeposit({id:x.id,status:'APPROVED'}),'Deposit approved.')}>Approve</button>
+            <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewDeposit({id:x.id,status:'REJECTED',reason}),'Deposit rejected.')}>Reject</button>
+          </div>
+        )}
         {x.proof_url&&<a className="secondary-button" href={`/api/deposit-proof?pathname=${encodeURIComponent(x.proof_url)}`} target="_blank" rel="noreferrer">View proof</a>}
        </Row>
       })}
