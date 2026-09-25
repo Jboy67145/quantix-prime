@@ -279,7 +279,7 @@ export default function ControlCenter(){
        </>}
       </Row>) }
       {!data.referrals.length&&<Empty text="No referrals yet."/>}
-    </Panel>
+    </Panel>}
 
     {tab==='lucky'&&<div className="grid gap-4 lg:grid-cols-[1fr_390px]">
       <Panel title="Lucky Wish draws"><p className="admin-copy mb-4">Only OPEN draws whose opening time has arrived and closing time has not passed appear in the user Lucky Wish area. Create multiple draws to show multiple live rewards at once.</p>{data.draws.map((x:any)=><Row key={x.id} title={x.status+' · '+x.title} meta={x.reward_type+' · '+naira(x.reward_minor||0)+' · '+date(x.closes_at)}>
