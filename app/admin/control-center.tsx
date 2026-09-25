@@ -93,7 +93,7 @@ export default function ControlCenter(){
       <a href="/" className="secondary-button whitespace-nowrap">User Home</a>
       <div className="brand-mark">Q</div><div><strong>quantix</strong><span className="block text-xs tracking-[.25em] opacity-60">PRIME CONTROL CENTER</span></div>
      </div>
-     <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act('refresh',load)}><RefreshCw size={16}/> Refresh</button>
+     <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>window.location.reload()} title="Refresh the entire admin system"><RefreshCw size={16}/> Refresh</button>
     </div>
     <nav aria-label="Admin sections" className="mt-4 flex gap-2 overflow-x-auto pb-1">
      {tabs.map(([id,label,I])=><button type="button" key={id} onClick={()=>{setTab(id);setError('');setSuccess('')}} className={tab===id?'primary-button whitespace-nowrap':'secondary-button whitespace-nowrap'}><I size={15}/>{label}</button>)}
