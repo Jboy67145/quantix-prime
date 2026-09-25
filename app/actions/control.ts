@@ -70,7 +70,12 @@ export async function updateWithdrawalSettings(input: { timezone: string; enable
   const actorId = await requireAdmin()
   const supabase = await createClient()
   const { data: existing } = await supabase.from('quantix_withdrawal_settings').select('id').limit(1).maybeSingle()
-  const payload = { timezone: input.timezone, enabled_days: input.enabledDays, start_time: input.startTime, end_time: input.endTime, minimum_minor: input.minimumMinor, maximum_minor: input.maximumMinor ?? null, enabled: input.enabled, updated_at: new Date().toISOString() }
+  const minimumMinor = Math.max(100000, Math.round(Number(input.minimumMinor || 0)))
+  const maximumMinor = input.maximumMinor == null ? null : Math.round(Number(input.maximumMinor))
+  if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(input.startTime) || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(input.endTime)) throw new Error('Invalid withdrawal opening or closing time.')
+  if (!Array.isArray(input.enabledDays) || input.enabledDays.length === 0) throw new Error('Select at least one withdrawal day.')
+  if (maximumMinor !== null && maximumMinor < minimumMinor) throw new Error('Maximum withdrawal must be at least the minimum.')
+  const payload = { timezone: input.timezone, enabled_days: input.enabledDays, start_time: input.startTime, end_time: input.endTime, minimum_minor: minimumMinor, maximum_minor: maximumMinor, enabled: Boolean(input.enabled), updated_at: new Date().toISOString() }
   const result = existing ? await supabase.from('quantix_withdrawal_settings').update(payload).eq('id', existing.id).select().single() : await supabase.from('quantix_withdrawal_settings').insert(payload).select().single()
   if (result.error) throw new Error('Unable to update withdrawal settings')
   await supabase.from('quantix_audit_logs').insert({ actor_id: actorId, actor_role: 'ADMIN', action: 'UPDATE_WITHDRAWAL_WINDOW', target_type: 'WITHDRAWAL_SETTINGS' })
