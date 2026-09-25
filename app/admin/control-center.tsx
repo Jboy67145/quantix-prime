@@ -157,10 +157,23 @@ export default function ControlCenter(){
     </Panel>}
 
     {tab==='deposits'&&<Panel title="All deposits">
-      {data.deposits.map((x:any)=><Row key={x.id} title={x.status+' · '+naira(x.amount_minor)} meta={x.user_id+' · '+date(x.created_at)}>
-       {x.status==='PENDING'&&<><button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewDeposit({id:x.id,status:'APPROVED'}),'Deposit approved.')}>Approve</button><button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewDeposit({id:x.id,status:'REJECTED',reason}),'Deposit rejected.')}>Reject</button></>}
-       {x.proof_url&&<a className="secondary-button" href={`/api/deposit-proof?pathname=${encodeURIComponent(x.proof_url)}`} target="_blank" rel="noreferrer">View proof</a>}
-      </Row>)}
+      {data.deposits.map((x:any)=>{
+       const funding=data.accounts.find((a:any)=>a.id===x.payment_account_id)
+       return <Row key={x.id} title={x.status+' · '+naira(x.amount_minor)} meta={x.user_id+' · '+date(x.created_at)}>
+        <div className="w-full rounded-2xl border border-white/10 bg-black/30 p-4">
+         <div className="mb-3 text-sm font-semibold">Submitted deposit details</div>
+         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div><div className="text-xs opacity-60">Amount</div><div className="mt-1 font-medium">{naira(x.amount_minor)}</div></div>
+          <div><div className="text-xs opacity-60">Sender name</div><div className="mt-1 break-words font-medium">{x.sender_name||'—'}</div></div>
+          <div><div className="text-xs opacity-60">Transfer reference</div><div className="mt-1 break-all font-medium">{x.transfer_reference||'—'}</div></div>
+          <div><div className="text-xs opacity-60">Deposit-to account</div><div className="mt-1 break-words font-medium">{funding?funding.bank_name+' · '+funding.account_name+' · '+funding.account_number:'—'}</div></div>
+         </div>
+         <div className="mt-3 text-xs opacity-60">Proof file: {x.payment_proof_name||'—'}</div>
+        </div>
+        {x.status==='PENDING'&&<><button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewDeposit({id:x.id,status:'APPROVED'}),'Deposit approved.')}>Approve</button><button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>reviewDeposit({id:x.id,status:'REJECTED',reason}),'Deposit rejected.')}>Reject</button></>}
+        {x.proof_url&&<a className="secondary-button" href={`/api/deposit-proof?pathname=${encodeURIComponent(x.proof_url)}`} target="_blank" rel="noreferrer">View proof</a>}
+       </Row>
+      })}
       {!data.deposits.length&&<Empty text="No deposits yet."/>}
     </Panel>}
 
