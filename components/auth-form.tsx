@@ -82,7 +82,6 @@ if (isSignUp) {
     </label>}
     {error && <p className="auth-error" role="alert">{error}</p>}
     {success && <p className="auth-success" role="status">{success}</p>}
-    {success && <p className="auth-success" role="status">{success}</p>}
     <button className="primary-button full" disabled={pending}>{pending ? 'Please wait…' : isSignUp ? 'Create account' : 'Sign in securely'}</button>
     {!isSignUp && <Link className="auth-link auth-forgot" href="/forgot-password">Forgot password?</Link>}
   </form>
