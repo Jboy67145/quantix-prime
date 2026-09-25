@@ -188,7 +188,7 @@ export default function ControlCenter(){
        <select className="account-form" value={plan.category} onChange={e=>setPlan({...plan,category:e.target.value})}><option>DAILY</option><option>WEEKLY</option><option>MONTHLY</option></select>
        {[
         ['minimumMinor','Minimum ₦'],['maximumMinor','Maximum ₦'],['returnBps','Return BPS'],['durationDays','Duration days'],['purchaseBonusMinor','Purchase bonus ₦ (minor units)'],['displayOrder','Display order']
-       ].map((x:any)=><input key={x[0]} className="account-form" type="number" placeholder={x[1]} value={x[0]==='purchaseBonusMinor'?Number(plan[x[0]||0])/100:plan[x[0]]} onChange={e=>setPlan({...plan,[x[0]:x[0]==='purchaseBonusMinor'?Math.round(Number(e.target.value)*100):Number(e.target.value)})}/> )}
+       ].map((x:any)=><input key={x[0]} className="account-form" type="number" placeholder={x[1]} value={x[0]==='purchaseBonusMinor'?Number(plan[x[0]||0])/100:plan[x[0]]} onChange={e=>setPlan({...plan,[x[0]]:x[0]==='purchaseBonusMinor'?Math.round(Number(e.target.value)*100):Number(e.target.value)})}/> )}
        <textarea className="account-form min-h-24" placeholder="Terms" value={plan.terms} onChange={e=>setPlan({...plan,terms:e.target.value})}/>
        <label className="admin-checkbox"><input type="checkbox" checked={plan.active} onChange={e=>setPlan({...plan,active:e.target.checked})}/> Active</label>
        <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>{
