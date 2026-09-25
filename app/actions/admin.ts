@@ -43,6 +43,7 @@ export async function reviewDeposit(input: { id: string; status: 'APPROVED' | 'R
     console.error('Deposit notification failed', notificationError)
   }
   revalidatePath('/admin')
+  revalidatePath('/')
   return deposit
 }
 
