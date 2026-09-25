@@ -26,6 +26,21 @@ export async function getNotifications() {
   return data ?? []
 }
 
+export async function getMarqueeHighlights() {
+  const user = await getCurrentUser()
+  if (!user) return []
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('quantix_marquee_items')
+    .select('id,title,content,kind,created_at,user_id')
+    .eq('active', true)
+    .or(`user_id.is.null,user_id.eq.${user.id}`)
+    .order('created_at', { ascending: false })
+    .limit(8)
+  if (error) throw new Error('Unable to load highlights')
+  return data ?? []
+}
+
 export async function createUserNotification(input: { userId: string; title: string; body: string; type?: string }) {
   const supabase = await createClient()
   const { error } = await supabase.from('quantix_notifications').insert({ user_id: input.userId, title: input.title, body: input.body, type: input.type || 'SYSTEM' })
