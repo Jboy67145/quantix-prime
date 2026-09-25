@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signIn, signUp } from '@/lib/auth-client'
@@ -21,9 +21,7 @@ export function AuthForm({
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
   const isSignUp = mode === 'sign-up'
-  if (isSignUp && !referralCode && typeof window !== 'undefined') {
-    // Referral codes are read only when the form is submitted/rendered in the browser.
-  }
+  useEffect(() => { if (isSignUp) setReferralCode(new URLSearchParams(window.location.search).get('ref') || '') }, [isSignUp])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
