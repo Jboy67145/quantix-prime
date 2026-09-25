@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     const supabase = await createClient()
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
     if (signInError) {
-      return NextResponse.json({ error: 'Account created, but automatic sign-in failed. Please sign in once.' }, { status: 201 })
+      return NextResponse.json({ error: 'Account was created, but automatic sign-in failed. Please sign in with your password.' }, { status: 500 })
     }
 
     return NextResponse.json({ data: { session: true, user: { id: user.id, email: user.email } } })
