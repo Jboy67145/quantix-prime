@@ -54,11 +54,16 @@ export default function Page() {
     getPublicPlans().then((v) => setPlans(v as Plan[])).catch(() => {})
     refreshAccount()
     getReferralSnapshot().then(setReferral).catch(() => {})
-    getOpenDraws().then((v) => setDraws(v as Draw[])).catch(() => {})
+    const refreshLuckyDraws = () => getOpenDraws().then((v) => setDraws(v as Draw[])).catch(() => {})
+    refreshLuckyDraws()
+    const luckyTimer = window.setInterval(refreshLuckyDraws, 30000)
     getNotifications().then((v) => setNotices(v as Notice[])).catch(() => {})
 
     window.addEventListener('quantix:refresh', refreshAccount)
-    return () => window.removeEventListener('quantix:refresh', refreshAccount)
+    return () => {
+      window.removeEventListener('quantix:refresh', refreshAccount)
+      window.clearInterval(luckyTimer)
+    }
   }, [authPending, session?.user?.id])
 
   if (authPending) {
