@@ -239,8 +239,8 @@ export default function ControlCenter(){
     </Panel>}
 
     {tab==='plans'&&<div className="grid gap-4 lg:grid-cols-[1fr_390px]">
-      <Panel title="Investment plans">{data.plans.map((x:any)=><Row key={x.id} title={x.name+' · '+(x.active&&!x.deleted_at?'LIVE':'ARCHIVED')} meta={x.category+' · '+x.duration_days+' days · '+(Number(x.return_bps)/100).toFixed(2)+'% · '+naira(x.minimum_minor)+'–'+naira(x.maximum_minor)}>
-       <button type="button" className="secondary-button" onClick={()=>setPlan({id:x.id,name:x.name,description:x.description,category:x.category,minimumMinor:Number(x.minimum_minor),maximumMinor:Number(x.maximum_minor),returnBps:Number(x.return_bps),durationDays:Number(x.duration_days),terms:x.terms,purchaseBonusMinor:Number(x.purchase_bonus_minor||0),active:x.active,displayOrder:x.display_order})}>Edit</button>
+      <Panel title="Investment plans">{data.plans.map((x:any)=><Row key={x.id} title={x.name+' · '+(x.active&&!x.deleted_at?'LIVE':'ARCHIVED')} meta={x.category+' · '+x.duration_days+' days · Earn '+naira(x.return_minor ?? 0)+' · '+naira(x.minimum_minor)+'–'+naira(x.maximum_minor)}>
+       <button type="button" className="secondary-button" onClick={()=>setPlan({id:x.id,name:x.name,description:x.description,category:x.category,minimumMinor:Number(x.minimum_minor),maximumMinor:Number(x.maximum_minor),returnMinor:Number(x.return_minor ?? 0),durationDays:Number(x.duration_days),terms:x.terms,purchaseBonusMinor:Number(x.purchase_bonus_minor||0),active:x.active,displayOrder:x.display_order})}>Edit</button>
        <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>archivePlan(x.id,!x.deleted_at,'Admin plan status change'),x.deleted_at?'Plan restored.':'Plan archived.')}>{x.deleted_at?<RotateCcw size={15}/>:<Archive size={15}/>} {x.deleted_at?'Restore':'Archive'}</button>
       </Row>)}<button type="button" className="secondary-button mt-3" onClick={()=>setPlan({...emptyPlan})}>New plan</button></Panel>
       <Panel title={plan.id?'Edit plan':'Create plan'}><div className="grid gap-2">
@@ -248,8 +248,8 @@ export default function ControlCenter(){
        <textarea className="account-form min-h-20" placeholder="Description" value={plan.description} onChange={e=>setPlan({...plan,description:e.target.value})}/>
        <select className="account-form" value={plan.category} onChange={e=>setPlan({...plan,category:e.target.value})}><option>DAILY</option><option>WEEKLY</option><option>MONTHLY</option></select>
        {[
-        ['minimumMinor','Minimum ₦'],['maximumMinor','Maximum ₦'],['returnBps','Return BPS'],['durationDays','Duration days'],['purchaseBonusMinor','Purchase bonus ₦ (minor units)'],['displayOrder','Display order']
-       ].map((x:any)=><input key={x[0]} className="account-form" type="number" placeholder={x[1]} value={x[0]==='purchaseBonusMinor'?Number(plan[x[0]||0])/100:plan[x[0]]} onChange={e=>setPlan({...plan,[x[0]]:x[0]==='purchaseBonusMinor'?Math.round(Number(e.target.value)*100):Number(e.target.value)})}/> )}
+        ['minimumMinor','Minimum ₦'],['maximumMinor','Maximum ₦'],['returnMinor','Return earned ₦'],['durationDays','Duration days'],['purchaseBonusMinor','Purchase bonus ₦'],['displayOrder','Display order']
+       ].map((x:any)=><input key={x[0]} className="account-form" type="number" placeholder={x[1]} value={plan[x[0]]/100} onChange={e=>setPlan({...plan,[x[0]]:Math.round(Number(e.target.value)*100)})}/> )}
        <textarea className="account-form min-h-24" placeholder="Terms" value={plan.terms} onChange={e=>setPlan({...plan,terms:e.target.value})}/>
        <label className="admin-checkbox"><input type="checkbox" checked={plan.active} onChange={e=>setPlan({...plan,active:e.target.checked})}/> Active</label>
        <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>{
