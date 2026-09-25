@@ -168,14 +168,21 @@ export async function uploadDepositProof(file: File) {
   return path
 }
 
-const walletDepositSchema = z.object({ amountMinor: z.number().int().positive().max(100_000_000_000), paymentAccountId: z.string().uuid(), transferReference: z.string().trim().min(4).max(120), senderName: z.string().trim().min(2).max(120), proofPathname: z.string().trim().min(1).max(500) })
+const walletDepositSchema = z.object({ amountMinor: z.coerce.number().int().positive().max(100_000_000_000), paymentAccountId: z.string().trim().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, 'Invalid deposit account.'), transferReference: z.string().trim().min(4).max(120), senderName: z.string().trim().min(2).max(120), proofPathname: z.string().trim().min(1).max(500) })
 
 export async function submitWalletDeposit(input: z.input<typeof walletDepositSchema>) {
   const userId = await getUserId()
   const parsed = walletDepositSchema.safeParse(input)
-  if (!parsed.success) throw new Error('Deposit form is incomplete or stale. Refresh the page, select an active deposit account, and try again.')
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0]
+    throw new Error(issue?.message || 'Please complete all deposit fields and try again.')
+  }
   const data = parsed.data
   const supabase = await createClient()
+  const expectedPrefix = `${userId}/`
+  if (!data.proofPathname.startsWith(expectedPrefix) || data.proofPathname.includes('..')) {
+    throw new Error('Payment proof is invalid. Please upload the proof again.')
+  }
   const { data: account, error: accountError } = await supabase.from('quantix_payment_accounts').select('id').eq('id', data.paymentAccountId).eq('active', true).maybeSingle()
   if (accountError || !account) throw new Error('Funding account is not available. Please refresh and select an active account.')
   const { data: deposit, error } = await supabase.rpc('submit_deposit_atomic', {
