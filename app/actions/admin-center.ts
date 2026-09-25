@@ -56,6 +56,7 @@ export async function getAdminCenter(){
       s.from('quantix_ledger_entries').select('*').order('created_at',{ascending:false}).limit(5000),
       s.from('quantix_audit_logs').select('*').order('created_at',{ascending:false}).limit(5000),
       s.from('quantix_withdrawal_settings').select('*').limit(1),
+      s.from('quantix_deposit_settings').select('*').limit(1),
     ]),
     listAllAuthUsers(s),
   ])
@@ -104,7 +105,7 @@ export async function getAdminCenter(){
     deposits:q[3].data||[], withdrawals:q[4].data||[], investments:q[5].data||[],
     referrals:q[6].data||[], draws:q[7].data||[], notifications:q[8].data||[],
     accounts:q[9].data||[], payouts:q[10].data||[], ledger:q[11].data||[],
-    audits:q[12].data||[], settings:q[13].data?.[0]||null,
+    audits:q[12].data||[], settings:q[13].data?.[0]||null, depositSettings:q[14].data?.[0]||null,
   }
 }
 
@@ -201,14 +202,16 @@ export async function setUserState(id:string,status:'ACTIVE'|'SUSPENDED'|'RESTRI
 const policy=z.object({
   timezone:z.string().trim().min(1).max(80),
   enabledDays:z.array(z.enum(['MON','TUE','WED','THU','FRI','SAT','SUN'])).min(1),
-  startTime:z.string().regex(/^([01]\\d|2[0-3]):[0-5]\\d$/),
-  endTime:z.string().regex(/^([01]\\d|2[0-3]):[0-5]\\d$/),
-  minimumMinor:z.number().int().nonnegative(),
+  startTime:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  endTime:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  minimumMinor:z.number().int().min(100000),
   maximumMinor:z.number().int().positive().nullable(),
   enabled:z.boolean(),
 })
 export async function savePolicy(input:z.input<typeof policy>){
   const a=await ctx(),d=policy.parse(input),s=await createClient()
+  try{ new Intl.DateTimeFormat('en-US',{timeZone:d.timezone}).format() }catch{ throw new Error('Enter a valid IANA timezone, for example Africa/Lagos.') }
+  if(d.minimumMinor<100000) throw new Error('Minimum withdrawal cannot be lower than ₦1,000.')
   if(d.maximumMinor!==null && d.maximumMinor<d.minimumMinor) throw new Error('Maximum withdrawal must be at least the minimum.')
   const old=(await s.from('quantix_withdrawal_settings').select('*').limit(1).maybeSingle()).data
   const payload={
@@ -220,6 +223,29 @@ export async function savePolicy(input:z.input<typeof policy>){
     : await s.from('quantix_withdrawal_settings').insert(payload).select().single()
   if(r.error) throw new Error(r.error.message)
   await log(a,'WITHDRAWAL_POLICY_UPDATED','WITHDRAWAL_SETTINGS',r.data.id,old,r.data)
+  revalidatePath('/admin')
+  revalidatePath('/')
+  return r.data
+}
+
+const depositPolicy=z.object({
+  timezone:z.string().trim().min(1).max(80),
+  enabledDays:z.array(z.enum(['MON','TUE','WED','THU','FRI','SAT','SUN'])).min(1),
+  startTime:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  endTime:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  enabled:z.boolean(),
+})
+
+export async function saveDepositPolicy(input:z.input<typeof depositPolicy>){
+  const a=await ctx(),d=depositPolicy.parse(input),s=await createClient()
+  try{ new Intl.DateTimeFormat('en-US',{timeZone:d.timezone}).format() }catch{ throw new Error('Enter a valid IANA timezone, for example Africa/Lagos.') }
+  const old=(await s.from('quantix_deposit_settings').select('*').limit(1).maybeSingle()).data
+  const payload={singleton:true,timezone:d.timezone,enabled_days:d.enabledDays,start_time:d.startTime,end_time:d.endTime,enabled:d.enabled,updated_at:new Date().toISOString()}
+  const r=old
+    ? await s.from('quantix_deposit_settings').update(payload).eq('id',old.id).select().single()
+    : await s.from('quantix_deposit_settings').insert(payload).select().single()
+  if(r.error) throw new Error(r.error.message)
+  await log(a,'DEPOSIT_POLICY_UPDATED','DEPOSIT_SETTINGS',r.data.id,old,r.data)
   revalidatePath('/admin')
   revalidatePath('/')
   return r.data
