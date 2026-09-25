@@ -40,7 +40,7 @@ export function WalletDashboard({ notify }: { notify: (message: string) => void 
     if (maximumWithdrawalMinor !== null && amountMinor > maximumWithdrawalMinor) return `Maximum withdrawal is ${money(maximumWithdrawalMinor)}.`
     if (amountMinor > withdrawable) return withdrawable === 0 ? 'Insufficient funds. Your available balance is ₦0.00.' : `Insufficient funds. You can withdraw up to ${money(withdrawable)}.`
     return ''
-  }, [amountMinor, form.amount, mode, withdrawable])
+  }, [amountMinor, form.amount, mode, withdrawable, minimumWithdrawalMinor, maximumWithdrawalMinor])
   const openMode = (next: Mode) => { setMode(next); setWithdrawalError(''); setDepositError(''); setProofFile(null); setForm({ amount: '', payoutAccountId: '', paymentAccountId: '', senderName: '', transferReference: '', bankName: '', accountName: '', accountNumber: '' }); if (next === 'deposit') { setDepositError(''); getPaymentAccounts().then((accounts) => { setFundingAccounts(accounts); if (!accounts.length) setDepositError('No active deposit accounts are available right now.') }).catch(() => setDepositError('We could not load deposit accounts. Please refresh and try again.')) } }
   const closeMode = () => { setMode(null); setWithdrawalError(''); setDepositError(''); setProofFile(null) }
   const submit = async () => {
