@@ -4,7 +4,7 @@ import { useEffect,useMemo,useState } from 'react'
 import { ArrowLeft, RefreshCw, Shield, Users, Wallet, TrendingUp, Landmark, Gift, Bell, ScrollText, Settings, Archive, RotateCcw, Save, Send, Search, CheckCircle2, Clock3, Copy, Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import {
-  getAdminCenter,savePlan,archivePlan,setUserState,savePolicy,sendAdminNotification,
+  getAdminCenter,savePlan,archivePlan,setUserState,savePolicy,saveDepositPolicy,sendAdminNotification,
   createDraw,updateDraw,toggleDraw,updateReferral,archivePayout,restorePayout,
   updateUserProfile,processInvestmentMaturity
 } from '@/app/actions/admin-center'
@@ -19,6 +19,7 @@ const days=['MON','TUE','WED','THU','FRI','SAT','SUN']
 const emptyPlan={name:'',description:'',category:'MONTHLY',minimumMinor:1000000,maximumMinor:1000000,returnBps:500,durationDays:30,terms:'',purchaseBonusMinor:0,active:true,displayOrder:1}
 const emptyDraw={title:'',description:'',rewardType:'CASH',rewardMinor:0,alternateReward:'',entryCostMinor:0,opensAt:'',closesAt:''}
 const emptyPolicy={timezone:'Africa/Lagos',enabledDays:['MON','TUE','WED','THU','FRI'],startTime:'09:00',endTime:'17:00',minimumMinor:100000,maximumMinor:null,enabled:true}
+const emptyDepositPolicy={timezone:'Africa/Lagos',enabledDays:['MON','TUE','WED','THU','FRI'],startTime:'09:00',endTime:'17:00',enabled:true}
 
 export default function ControlCenter(){
  const router=useRouter()
@@ -34,6 +35,7 @@ export default function ControlCenter(){
  const [profile,setProfile]=useState({name:'',username:''})
  const [plan,setPlan]=useState<any>(emptyPlan)
  const [policy,setPolicy]=useState<any>(emptyPolicy)
+ const [depositPolicy,setDepositPolicy]=useState<any>(emptyDepositPolicy)
  const [msg,setMsg]=useState<any>({userId:'',title:'',body:'',type:'SYSTEM'})
  const [draw,setDraw]=useState<any>(emptyDraw)
  const [copied,setCopied]=useState('')
@@ -44,9 +46,14 @@ export default function ControlCenter(){
      if(d.settings)setPolicy({
        timezone:d.settings.timezone,enabledDays:d.settings.enabled_days||[],
        startTime:d.settings.start_time,endTime:d.settings.end_time,
-       minimumMinor:Number(d.settings.minimum_minor||0),
+       minimumMinor:Number(d.settings.minimum_minor||100000),
        maximumMinor:d.settings.maximum_minor==null?null:Number(d.settings.maximum_minor),
        enabled:Boolean(d.settings.enabled)
+     })
+     if(d.depositSettings)setDepositPolicy({
+       timezone:d.depositSettings.timezone,enabledDays:d.depositSettings.enabled_days||[],
+       startTime:d.depositSettings.start_time,endTime:d.depositSettings.end_time,
+       enabled:Boolean(d.depositSettings.enabled)
      })
    }catch(e){setError(e instanceof Error?e.message:'Unable to load control center.')}
  }
@@ -297,15 +304,26 @@ export default function ControlCenter(){
     {tab==='ledger'&&<Panel title="Financial ledger"><p className="admin-copy mb-3">Ledger entries are intentionally read-only. Financial history is not hard-deleted.</p>{data.ledger.map((x:any)=><Row key={x.id} title={x.type+' · '+x.direction+' · '+naira(x.amount_minor)} meta={x.user_id+' · '+x.reference+' · '+date(x.created_at)}/>)}</Panel>}
     {tab==='audit'&&<Panel title="Audit log">{data.audits.map((x:any)=><Row key={x.id} title={x.action} meta={(x.actor_id||'system')+' · '+x.target_type+' · '+date(x.created_at)}>{x.reason&&<span className="text-xs opacity-60">{x.reason}</span>}</Row>)}</Panel>}
 
-    {tab==='settings'&&<Panel title="Withdrawal policy"><div className="grid gap-3 max-w-xl">
-      <input className="account-form" value={policy.timezone} onChange={e=>setPolicy({...policy,timezone:e.target.value})} placeholder="Timezone"/>
-      <div><div className="text-sm opacity-70 mb-2">Allowed withdrawal days</div><div className="flex flex-wrap gap-2">{days.map(d=><label key={d} className="admin-checkbox"><input type="checkbox" checked={policy.enabledDays.includes(d)} onChange={e=>setPolicy({...policy,enabledDays:e.target.checked?[...policy.enabledDays,d]:policy.enabledDays.filter((x:string)=>x!==d)})}/>{d}</label>)}</div></div>
-      <div className="grid grid-cols-2 gap-2"><input className="account-form" type="time" value={policy.startTime} onChange={e=>setPolicy({...policy,startTime:e.target.value})}/><input className="account-form" type="time" value={policy.endTime} onChange={e=>setPolicy({...policy,endTime:e.target.value})}/></div>
-      <input className="account-form" type="number" value={policy.minimumMinor/100} onChange={e=>setPolicy({...policy,minimumMinor:Math.round(Number(e.target.value)*100)})} placeholder="Minimum withdrawal ₦"/>
-      <input className="account-form" type="number" value={policy.maximumMinor==null?'':policy.maximumMinor/100} onChange={e=>setPolicy({...policy,maximumMinor:e.target.value===''?null:Math.round(Number(e.target.value)*100)})} placeholder="Maximum withdrawal ₦"/>
-      <label className="admin-checkbox"><input type="checkbox" checked={policy.enabled} onChange={e=>setPolicy({...policy,enabled:e.target.checked})}/> Withdrawals enabled</label>
-      <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>{if(!policy.enabledDays.length)return setError('Select at least one withdrawal day.');if(policy.maximumMinor!==null&&policy.maximumMinor<policy.minimumMinor)return setError('Maximum withdrawal must be at least minimum.');void act('policy',()=>savePolicy(policy),'Withdrawal policy saved.')}}><Save size={15}/>Save policy</button>
-    </div></Panel>}
+    {tab==='settings'&&<div className="grid gap-4 lg:grid-cols-2">
+      <Panel title="Withdrawal policy"><div className="grid gap-3">
+        <input className="account-form" value={policy.timezone} onChange={e=>setPolicy({...policy,timezone:e.target.value})} placeholder="Timezone (e.g. Africa/Lagos)"/>
+        <div><div className="text-sm opacity-70 mb-2">Allowed withdrawal days</div><div className="flex flex-wrap gap-2">{days.map(d=><label key={d} className="admin-checkbox"><input type="checkbox" checked={policy.enabledDays.includes(d)} onChange={e=>setPolicy({...policy,enabledDays:e.target.checked?[...policy.enabledDays,d]:policy.enabledDays.filter((x:string)=>x!==d)})}/>{d}</label>)}</div></div>
+        <div className="grid grid-cols-2 gap-2"><label className="text-sm opacity-80">Opens<input className="account-form mt-1 w-full" type="time" value={policy.startTime} onChange={e=>setPolicy({...policy,startTime:e.target.value})}/></label><label className="text-sm opacity-80">Closes<input className="account-form mt-1 w-full" type="time" value={policy.endTime} onChange={e=>setPolicy({...policy,endTime:e.target.value})}/></label></div>
+        <input className="account-form" type="number" min="1000" step="1" value={policy.minimumMinor/100} onChange={e=>setPolicy({...policy,minimumMinor:Math.round(Number(e.target.value)*100)})} placeholder="Minimum withdrawal ₦"/>
+        <input className="account-form" type="number" min="1000" step="1" value={policy.maximumMinor==null?'':policy.maximumMinor/100} onChange={e=>setPolicy({...policy,maximumMinor:e.target.value===''?null:Math.round(Number(e.target.value)*100)})} placeholder="Maximum withdrawal ₦ (optional)"/>
+        <p className="text-xs opacity-60">Minimum can be set from ₦1,000 upward. Leave maximum blank for no maximum.</p>
+        <label className="admin-checkbox"><input type="checkbox" checked={policy.enabled} onChange={e=>setPolicy({...policy,enabled:e.target.checked})}/> Withdrawals enabled</label>
+        <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>{if(!policy.enabledDays.length)return setError('Select at least one withdrawal day.');if(policy.minimumMinor<100000)return setError('Minimum withdrawal cannot be lower than ₦1,000.');if(policy.maximumMinor!==null&&policy.maximumMinor<policy.minimumMinor)return setError('Maximum withdrawal must be at least minimum.');void act('withdrawal-policy',()=>savePolicy(policy),'Withdrawal policy saved.')}}><Save size={15}/>Save withdrawal policy</button>
+      </div></Panel>
+      <Panel title="Deposit policy"><div className="grid gap-3">
+        <input className="account-form" value={depositPolicy.timezone} onChange={e=>setDepositPolicy({...depositPolicy,timezone:e.target.value})} placeholder="Timezone (e.g. Africa/Lagos)"/>
+        <div><div className="text-sm opacity-70 mb-2">Allowed deposit days</div><div className="flex flex-wrap gap-2">{days.map(d=><label key={d} className="admin-checkbox"><input type="checkbox" checked={depositPolicy.enabledDays.includes(d)} onChange={e=>setDepositPolicy({...depositPolicy,enabledDays:e.target.checked?[...depositPolicy.enabledDays,d]:depositPolicy.enabledDays.filter((x:string)=>x!==d)})}/>{d}</label>)}</div></div>
+        <div className="grid grid-cols-2 gap-2"><label className="text-sm opacity-80">Opens<input className="account-form mt-1 w-full" type="time" value={depositPolicy.startTime} onChange={e=>setDepositPolicy({...depositPolicy,startTime:e.target.value})}/></label><label className="text-sm opacity-80">Closes<input className="account-form mt-1 w-full" type="time" value={depositPolicy.endTime} onChange={e=>setDepositPolicy({...depositPolicy,endTime:e.target.value})}/></label></div>
+        <p className="text-xs opacity-60">Deposits submitted outside this schedule are blocked by the server and database policy.</p>
+        <label className="admin-checkbox"><input type="checkbox" checked={depositPolicy.enabled} onChange={e=>setDepositPolicy({...depositPolicy,enabled:e.target.checked})}/> Deposits enabled</label>
+        <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>{if(!depositPolicy.enabledDays.length)return setError('Select at least one deposit day.');void act('deposit-policy',()=>saveDepositPolicy(depositPolicy),'Deposit policy saved.')}}><Save size={15}/>Save deposit policy</button>
+      </div></Panel>
+    </div>}
    </div>
   </div>
  </main>
