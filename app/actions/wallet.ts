@@ -46,11 +46,20 @@ export async function getReferralSnapshot() {
   if (!userId) return { profile: null, referrals: [], earned: 0, pending: 0, link: '' }
   const supabase = await createClient()
   const [{ data: profile }, { data: referrals }] = await Promise.all([
-    supabase.from('profiles').select('username, invite_code').eq('id', userId).maybeSingle(),
+    supabase.from('profiles').select('username, invite_code, referred_by_code').eq('id', userId).maybeSingle(),
     supabase.from('quantix_referrals').select('*').eq('referrer_user_id', userId).order('created_at', { ascending: false }),
   ])
-  const rows = referrals ?? []
-  return { profile, referrals: rows, earned: rows.filter((row) => row.status === 'QUALIFIED').reduce((sum, row) => sum + Number(row.reward_minor), 0), pending: rows.filter((row) => row.status !== 'QUALIFIED').reduce((sum, row) => sum + Number(row.reward_minor), 0), link: profile?.username ? `${getAppUrl()}/sign-up?ref=${encodeURIComponent(profile.username)}` : '' }
+  const rows = (referrals ?? []).map((row: any) => ({
+    ...row,
+    rewardMinor: Number(row.reward_minor || 0),
+  }))
+  return {
+    profile,
+    referrals: rows,
+    earned: rows.filter((row: any) => row.status === 'QUALIFIED').reduce((sum: number, row: any) => sum + row.rewardMinor, 0),
+    pending: rows.filter((row: any) => row.status !== 'QUALIFIED').reduce((sum: number, row: any) => sum + row.rewardMinor, 0),
+    link: profile?.invite_code ? '\`${getAppUrl()}\/sign-up?ref=\${encodeURIComponent(profile.invite_code)}\`' : '',
+  }
 }
 
 const payoutSchema = z.object({ bankName: z.string().trim().min(2).max(80), accountName: z.string().trim().min(2).max(120), accountNumber: z.string().regex(/^\d{10}$/) })
