@@ -19,6 +19,7 @@ export function AuthForm({
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [pending, setPending] = useState(false)
   const [success, setSuccess] = useState('')
   const isSignUp = mode === 'sign-up'
@@ -52,8 +53,12 @@ export function AuthForm({
     ? redirectTo
     : '/'
 
-router.replace(safeRedirect)
-      router.refresh()
+if (isSignUp) {
+        setSuccess('Account created successfully. Opening your dashboard…')
+        window.setTimeout(() => window.location.assign(safeRedirect), 350)
+      } else {
+        window.location.assign(safeRedirect)
+      }
     } catch {
       setError('Authentication service is temporarily unavailable. Please try again.')
       setPending(false)
@@ -77,6 +82,7 @@ router.replace(safeRedirect)
       <small id="referral-help">If someone referred you, enter their genuine Quantix Prime referral code. You can only attach one referral to this account.</small>
     </label>}
     {error && <p className="auth-error" role="alert">{error}</p>}
+    {success && <p className="auth-success" role="status">{success}</p>}
     {success && <p className="auth-success" role="status">{success}</p>}
     <button className="primary-button full" disabled={pending}>{pending ? 'Please wait…' : isSignUp ? 'Create account' : 'Sign in securely'}</button>
     {!isSignUp && <Link className="auth-link auth-forgot" href="/forgot-password">Forgot password?</Link>}
