@@ -22,7 +22,12 @@ export function AuthForm({
   const [pending, setPending] = useState(false)
   const [success, setSuccess] = useState('')
   const isSignUp = mode === 'sign-up'
-  useEffect(() => { if (isSignUp) setReferralCode(new URLSearchParams(window.location.search).get('ref') || '') }, [isSignUp])
+  useEffect(() => {
+    if (isSignUp) {
+      const fromLink = new URLSearchParams(window.location.search).get('ref') || ''
+      setReferralCode(fromLink.trim().toUpperCase())
+    }
+  }, [isSignUp])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -59,6 +64,18 @@ router.replace(safeRedirect)
     {isSignUp && <><label>Username<input autoComplete="username" pattern="[A-Za-z0-9_]{3,24}" minLength={3} maxLength={24} value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} placeholder="e.g. japhet_prime" required /></label><label>Full name<input autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required /></label></>}
     <label>Email address<input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
     <label>Password<input type="password" minLength={8} autoComplete={isSignUp ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
+    {isSignUp && <label>
+      Referral code <span className="muted">(optional)</span>
+      <input
+        autoComplete="off"
+        value={referralCode}
+        onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))}
+        placeholder="Enter referral code"
+        maxLength={32}
+        aria-describedby="referral-help"
+      />
+      <small id="referral-help">If someone referred you, enter their genuine Quantix Prime referral code. You can only attach one referral to this account.</small>
+    </label>}
     {error && <p className="auth-error" role="alert">{error}</p>}
     {success && <p className="auth-success" role="status">{success}</p>}
     <button className="primary-button full" disabled={pending}>{pending ? 'Please wait…' : isSignUp ? 'Create account' : 'Sign in securely'}</button>
