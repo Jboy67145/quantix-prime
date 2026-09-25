@@ -143,6 +143,32 @@ export async function savePlan(input:z.input<typeof plan>){
     : await s.from('quantix_plans').insert(payload).select().single()
   if(r.error) throw new Error(r.error.message)
   await log(a,d.id?'PLAN_UPDATED':'PLAN_CREATED','PLAN',r.data.id,before,r.data)
+
+  // Marquee highlights are separate from the notification inbox. Editing a plan
+  // creates only a marquee highlight; creating a new plan creates both a marquee
+  // highlight and a notification inbox entry.
+  const audience = {
+    title: d.id ? 'Investment plan updated' : 'New investment plan available',
+    content: d.id
+      ? `${r.data.name} has been updated. Review the latest investment amount, return earned, duration and purchase bonus in the Invest section.`
+      : `${r.data.name} is now available. Investment: ₦${(r.data.minimum_minor/100).toLocaleString('en-NG')}; return earned: ₦${(r.data.return_minor/100).toLocaleString('en-NG')}; duration: ${r.data.duration_days} days; purchase bonus: ₦${(r.data.purchase_bonus_minor/100).toLocaleString('en-NG')}.`,
+    kind: d.id ? 'PLAN_UPDATE' : 'NEW_PLAN',
+  }
+  const marquee=await s.from('quantix_marquee_items').insert({
+    user_id:null,title:audience.title,content:audience.content,kind:audience.kind,active:true,
+  }).select().single()
+  if(marquee.error) throw new Error(`Plan saved, but marquee publication failed: ${marquee.error.message}`)
+
+  if(!d.id){
+    const recipients=(await s.from('profiles').select('id')).data||[]
+    if(recipients.length){
+      const n=await s.from('quantix_notifications').insert(recipients.map((u:any)=>({
+        user_id:u.id,title:`New investment plan: ${r.data.name}`,
+        body:audience.content,type:'NEW_PLAN'
+      })))
+      if(n.error) throw new Error(`Plan saved, but notification publication failed: ${n.error.message}`)
+    }
+  }
   revalidatePath('/')
   revalidatePath('/admin')
   return r.data
@@ -249,6 +275,35 @@ export async function saveDepositPolicy(input:z.input<typeof depositPolicy>){
   await log(a,'DEPOSIT_POLICY_UPDATED','DEPOSIT_SETTINGS',r.data.id,old,r.data)
   revalidatePath('/admin')
   revalidatePath('/')
+  return r.data
+}
+
+const marquee=z.object({
+  id:uuid.optional(),userId:uuid.nullable(),title:z.string().trim().min(2).max(160),
+  content:z.string().trim().min(2).max(2000),kind:z.string().trim().min(2).max(40),active:z.boolean(),
+})
+export async function saveMarquee(input:z.input<typeof marquee>){
+  const a=await ctx(),d=marquee.parse(input),s=await createClient()
+  const before=d.id?(await s.from('quantix_marquee_items').select('*').eq('id',d.id).maybeSingle()).data:null
+  const payload={user_id:d.userId,title:d.title,content:d.content,kind:d.kind,active:d.active,updated_at:new Date().toISOString()}
+  const r=d.id
+    ? await s.from('quantix_marquee_items').update(payload).eq('id',d.id).select().single()
+    : await s.from('quantix_marquee_items').insert(payload).select().single()
+  if(r.error) throw new Error(r.error.message)
+  await log(a,d.id?'MARQUEE_UPDATED':'MARQUEE_CREATED','MARQUEE',r.data.id,before,r.data)
+  revalidatePath('/')
+  revalidatePath('/admin')
+  return r.data
+}
+export async function archiveMarquee(id:string){
+  const a=await ctx(),i=uuid.parse(id),s=await createClient()
+  const before=(await s.from('quantix_marquee_items').select('*').eq('id',i).maybeSingle()).data
+  if(!before) throw new Error('Marquee item not found.')
+  const r=await s.from('quantix_marquee_items').update({active:false,updated_at:new Date().toISOString()}).eq('id',i).select().single()
+  if(r.error) throw new Error(r.error.message)
+  await log(a,'MARQUEE_ARCHIVED','MARQUEE',i,before,r.data)
+  revalidatePath('/')
+  revalidatePath('/admin')
   return r.data
 }
 
