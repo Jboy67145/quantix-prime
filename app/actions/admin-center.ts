@@ -95,6 +95,9 @@ export async function getAdminCenter(){
   const walletRows=q[1].data||[]
   const investmentRows=q[5].data||[]
   const referralRows=q[6].data||[]
+  // Build user-facing financial totals from the same live wallet/investment records
+  // the admin sees, so Manage Users and Wallet never show stale/derived placeholders.
+
   const walletByUser=new Map(walletRows.map((w:any)=>[w.user_id,w]))
   const investmentByUser=new Map<string, any[]>()
   for(const inv of investmentRows){ const list=investmentByUser.get(inv.user_id)||[]; list.push(inv); investmentByUser.set(inv.user_id,list) }
