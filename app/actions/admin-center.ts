@@ -92,8 +92,35 @@ export async function getAdminCenter(){
     if(!authById.has(p.id)) profiles.push({...p,email:null,account_source:'PROFILE_ONLY'})
   }
 
+  const walletRows=q[1].data||[]
+  const investmentRows=q[5].data||[]
+  const referralRows=q[6].data||[]
+  const walletByUser=new Map(walletRows.map((w:any)=>[w.user_id,w]))
+  const investmentByUser=new Map<string, any[]>()
+  for(const inv of investmentRows){ const list=investmentByUser.get(inv.user_id)||[]; list.push(inv); investmentByUser.set(inv.user_id,list) }
+  const referralByReferrer=new Map<string, any[]>()
+  for(const ref of referralRows){ const list=referralByReferrer.get(ref.referrer_user_id)||[]; list.push(ref); referralByReferrer.set(ref.referrer_user_id,list) }
+  const enrichedProfiles=profiles.map((p:any)=>{
+    const w=walletByUser.get(p.id)
+    const invs=investmentByUser.get(p.id)||[]
+    const refs=referralByReferrer.get(p.id)||[]
+    const qualified=refs.filter((r:any)=>r.status==='QUALIFIED')
+    return {
+      ...p,
+      available_balance_minor:Number(w?.available_minor||0),
+      invested_balance_minor:Number(w?.invested_minor||0),
+      profit_balance_minor:Number(w?.profit_minor||0),
+      total_investments_count:invs.length,
+      active_investments_count:invs.filter((i:any)=>i.status==='ACTIVE').length,
+      referral_count:refs.length,
+      verified_referral_count:qualified.length,
+      pending_referral_count:refs.filter((r:any)=>r.status==='PENDING').length,
+      referral_earnings_minor:qualified.reduce((sum:number,r:any)=>sum+Number(r.reward_minor||0),0),
+    }
+  })
+
   return {
-    profiles,
+    profiles:enrichedProfiles,
     registeredAccountCount:authUsers.length,
     registeredUserCount:authUsers.filter((u:any)=>profileById.get(u.id)?.role!=='SUPER_ADMIN'&&profileById.get(u.id)?.role!=='ADMIN').length,
     adminAccountCount:authUsers.filter((u:any)=>{
