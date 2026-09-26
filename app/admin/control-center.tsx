@@ -48,6 +48,7 @@ export default function ControlCenter(){
  const load=async()=>{
    try{
      setError(''); const d=await getAdminCenter(); setData(d)
+     setSelectedUser((current:any)=>current ? (d.profiles||[]).find((u:any)=>u.id===current.id)||current : current)
      if(d.settings)setPolicy({
        timezone:d.settings.timezone,enabledDays:d.settings.enabled_days||[],
        startTime:d.settings.start_time,endTime:d.settings.end_time,
