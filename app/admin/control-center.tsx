@@ -147,6 +147,29 @@ export default function ControlCenter(){
         ?<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(u.id,()=>setUserState(u.id,'SUSPENDED','Administrative suspension'),'User suspended.')}>Suspend</button>
         :<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(u.id,()=>setUserState(u.id,'ACTIVE','Administrative restoration'),'User activated.')}>Activate</button>}
       </Row>)}
+      {selectedUser&&<div className="mt-5 rounded-3xl border border-white/10 bg-black/20 p-5">
+       <div className="flex flex-wrap items-start justify-between gap-3">
+        <div><div className="text-xs uppercase tracking-wider opacity-50">Managed user</div><h3 className="mt-1 text-xl font-semibold">{selectedUser.name||'Unnamed'} · {selectedUser.username||'No username'}</h3><p className="text-sm opacity-60">{selectedUser.email||'No email'} · {selectedUser.status} · {selectedUser.role}</p></div>
+        <button type="button" className="secondary-button" onClick={()=>selectUser(null)}>Close</button>
+       </div>
+       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl border border-white/10 p-4"><span className="text-xs opacity-60">Available balance</span><strong className="mt-1 block text-lg">{naira(selectedUser.available_balance_minor)}</strong></div>
+        <div className="rounded-2xl border border-white/10 p-4"><span className="text-xs opacity-60">Invested balance</span><strong className="mt-1 block text-lg">{naira(selectedUser.invested_balance_minor)}</strong></div>
+        <div className="rounded-2xl border border-white/10 p-4"><span className="text-xs opacity-60">Profit</span><strong className="mt-1 block text-lg">{naira(selectedUser.profit_balance_minor)}</strong></div>
+        <div className="rounded-2xl border border-white/10 p-4"><span className="text-xs opacity-60">Investments</span><strong className="mt-1 block text-lg">{selectedUser.total_investments_count} total · {selectedUser.active_investments_count} active</strong></div>
+       </div>
+       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl border border-white/10 p-4"><span className="text-xs opacity-60">Total referrals</span><strong className="mt-1 block text-lg">{selectedUser.referral_count}</strong></div>
+        <div className="rounded-2xl border border-white/10 p-4"><span className="text-xs opacity-60">Verified referrals</span><strong className="mt-1 block text-lg">{selectedUser.verified_referral_count}</strong></div>
+        <div className="rounded-2xl border border-white/10 p-4"><span className="text-xs opacity-60">Pending referrals</span><strong className="mt-1 block text-lg">{selectedUser.pending_referral_count}</strong></div>
+        <div className="rounded-2xl border border-white/10 p-4"><span className="text-xs opacity-60">Referral earnings</span><strong className="mt-1 block text-lg">{naira(selectedUser.referral_earnings_minor)}</strong></div>
+       </div>
+       <div className="mt-5 border-t border-white/10 pt-5">
+        <h4 className="font-semibold">Edit user profile</h4>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2"><input className="account-form" placeholder="Full name" value={profile.name} onChange={e=>setProfile({...profile,name:e.target.value})}/><input className="account-form" placeholder="Username" value={profile.username} onChange={e=>setProfile({...profile,username:e.target.value})}/></div>
+        <button type="button" className="secondary-button mt-3" disabled={Boolean(busy)} onClick={()=>act('profile-users',()=>updateUserProfile({id:selectedUser.id,name:profile.name,username:profile.username}),'User profile saved.')}>Save profile changes</button>
+       </div>
+      </div>}
     </Panel>}
 
     {tab==='wallet'&&<Panel title="Audited wallet control">
