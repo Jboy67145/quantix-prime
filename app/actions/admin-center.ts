@@ -325,6 +325,17 @@ export async function saveMarquee(input:z.input<typeof marquee>){
   revalidatePath('/admin')
   return r.data
 }
+export async function deleteMarquee(id:string){
+  const a=await ctx(),i=uuid.parse(id),s=await createClient()
+  const before=(await s.from('quantix_marquee_items').select('*').eq('id',i).maybeSingle()).data
+  if(!before) throw new Error('Marquee item not found.')
+  const r=await s.from('quantix_marquee_items').delete().eq('id',i).select().single()
+  if(r.error) throw new Error(r.error.message)
+  await log(a,'MARQUEE_DELETED','MARQUEE',i,before,null,'Administrative deletion')
+  revalidatePath('/')
+  revalidatePath('/admin')
+  return r.data
+}
 export async function archiveMarquee(id:string){
   const a=await ctx(),i=uuid.parse(id),s=await createClient()
   const before=(await s.from('quantix_marquee_items').select('*').eq('id',i).maybeSingle()).data
