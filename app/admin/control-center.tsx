@@ -142,7 +142,7 @@ export default function ControlCenter(){
 
     {tab==='users'&&<Panel title={`Registered accounts · ${data.registeredAccountCount}`}>
       <div className="mb-4 flex flex-col gap-2 sm:flex-row"><div className="flex flex-1 gap-2"><Search className="mt-3 opacity-50"/><input className="account-form flex-1" placeholder="Search name, username, email or UUID" value={q} onChange={e=>setQ(e.target.value)}/></div><div className="secondary-button"><Users size={15}/>{users.length} shown · {data.registeredUserCount} users · {data.adminAccountCount} admins</div></div>
-      {users.map((u:any)=><Row key={u.id} title={(u.name||'Unnamed')+' · '+(u.username||'No username')} meta={(u.email||'No email')+' · '+u.status+' · '+u.role+' · '+u.id}>
+      {users.map((u:any)=><Row key={u.id} title={(u.name||'Unnamed')+' · '+(u.username||'No username')} meta={(u.email||'No email')+' · '+u.status+' · '+u.role+' · '+u.id+' · '+naira(u.available_balance_minor)+' available · '+naira(u.invested_balance_minor)+' invested · '+naira(u.profit_balance_minor)+' profit'}>
        <button type="button" className="primary-button" onClick={()=>selectUser(u)}>Manage</button>
        {u.status==='ACTIVE'
         ?<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(u.id,()=>setUserState(u.id,'SUSPENDED','Administrative suspension'),'User suspended.')}>Suspend</button>
@@ -170,11 +170,30 @@ export default function ControlCenter(){
         <div className="mt-3 grid gap-2 sm:grid-cols-2"><input className="account-form" placeholder="Full name" value={profile.name} onChange={e=>setProfile({...profile,name:e.target.value})}/><input className="account-form" placeholder="Username" value={profile.username} onChange={e=>setProfile({...profile,username:e.target.value})}/></div>
         <button type="button" className="secondary-button mt-3" disabled={Boolean(busy)} onClick={()=>act('profile-users',()=>updateUserProfile({id:selectedUser.id,name:profile.name,username:profile.username}),'User profile saved.')}>Save profile changes</button>
        </div>
+       <div className="mt-5 border-t border-white/10 pt-5">
+        <div className="mb-3 flex items-center justify-between"><h4 className="font-semibold">Recent user activity</h4><span className="text-xs opacity-50">Latest 2 ledger entries</span></div>
+        <div className="space-y-2">
+         {data.ledger.filter((x:any)=>x.user_id===selectedUser.id).slice(0,2).map((x:any)=><Row key={x.id} title={(x.type||'ACTIVITY').replaceAll('_',' ')+' · '+(x.direction==='CREDIT'?'+':'-')+naira(x.amount_minor)} meta={(x.status||'')+' · '+date(x.created_at)+' · '+(x.reference||'No reference')}/>)}
+         {!data.ledger.some((x:any)=>x.user_id===selectedUser.id)&&<Empty text="No recent wallet activity for this user."/>}
+        </div>
+       </div>
       </div>}
     </Panel>}
 
     {tab==='wallet'&&<Panel title="Audited wallet control">
       <p className="admin-copy">All balance changes use the atomic financial function and create an audit record. Positive amounts credit; negative amounts debit.</p>
+      <div className="mb-5 rounded-3xl border border-white/10 bg-black/20 p-4">
+       <div className="mb-3 flex items-center justify-between gap-3"><div><h3 className="font-semibold">All user balances</h3><p className="text-xs opacity-60">Live values from the wallet records. The list refreshes automatically every 15 seconds.</p></div><div className="secondary-button"><Users size={15}/>{users.length} accounts</div></div>
+       <div className="space-y-2">
+        {users.map((u:any)=><div key={u.id} className="grid gap-2 rounded-2xl border border-white/10 bg-black/20 p-3 sm:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))_auto] sm:items-center">
+         <div className="min-w-0"><div className="truncate font-medium">{u.name||'Unnamed'} · {u.username||'No username'}</div><div className="truncate text-xs opacity-50">{u.email||u.id}</div></div>
+         <div><div className="text-[10px] uppercase tracking-wider opacity-50">Available</div><div className="font-semibold">{naira(u.available_balance_minor)}</div></div>
+         <div><div className="text-[10px] uppercase tracking-wider opacity-50">Invested</div><div className="font-semibold">{naira(u.invested_balance_minor)}</div></div>
+         <div><div className="text-[10px] uppercase tracking-wider opacity-50">Profit</div><div className="font-semibold">{naira(u.profit_balance_minor)}</div></div>
+         <button type="button" className="secondary-button" onClick={()=>selectUser(u)}>Manage</button>
+        </div>)}
+       </div>
+      </div>
       <label className="block text-sm opacity-80 mb-2">Select user
        <select className="account-form mt-1 w-full" value={selectedUser?.id||''} onChange={e=>selectUser(data.profiles.find((u:any)=>u.id===e.target.value))}>
         <option value="">Choose a user…</option>{data.profiles.map((u:any)=><option key={u.id} value={u.id}>{u.name||'Unnamed'} · {u.username||u.id}</option>)}
