@@ -5,5 +5,10 @@ export function createServiceClient() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
   if (!serviceKey) throw new Error('Supabase service role is not configured.')
   const { url } = getSupabasePublicConfig()
-  return createSupabaseClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } })
+  return createSupabaseClient(url, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: {
+      fetch: (input, init = {}) => fetch(input, { ...init, cache: 'no-store' }),
+    },
+  })
 }
