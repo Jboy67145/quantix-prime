@@ -501,3 +501,21 @@ export async function processInvestmentMaturity(id:string){
   revalidatePath('/')
   return result
 }
+
+
+export async function cancelInvestment(input:{userId:string;investmentId:string;reason:string}){
+  const a=await ctx()
+  const userId=uuid.parse(input.userId)
+  const investmentId=uuid.parse(input.investmentId)
+  const reason=z.string().trim().min(5).max(1000).parse(input.reason)
+  const s=await createClient()
+  const { data, error } = await s.rpc('admin_cancel_investment_atomic',{
+    p_user_id:userId,
+    p_investment_id:investmentId,
+    p_reason:reason,
+  })
+  if(error || !data) throw new Error(error?.message || 'Investment cancellation failed. No changes were made.')
+  revalidatePath('/admin')
+  revalidatePath('/')
+  return data
+}
