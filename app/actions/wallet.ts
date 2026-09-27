@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUser } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { getAppUrl } from '@/lib/env'
 import { createUserNotification } from '@/app/actions/notifications'
 
@@ -216,7 +217,9 @@ export async function submitWalletDeposit(input: z.input<typeof walletDepositSch
     normalizeFingerprintPart(data.senderName),
     normalizeFingerprintPart(data.transferReference),
   ].join('|'))
-  const { data: deposit, error } = await supabase.rpc('submit_deposit_secure', {
+  const serviceSupabase = createServiceClient()
+  const { data: deposit, error } = await serviceSupabase.rpc('submit_deposit_secure', {
+    p_user_id: userId,
     p_deposit_reference: data.depositReference,
     p_amount_minor: data.amountMinor,
     p_payment_account_id: data.paymentAccountId,
