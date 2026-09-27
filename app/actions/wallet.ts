@@ -161,13 +161,26 @@ export async function requestWithdrawal(input: { payoutAccountId: string; amount
 
 function moneyMinor(minor: number) { return `₦${(minor / 100).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }
 
+async function sha256Hex(input: ArrayBuffer | string) {
+  const bytes = typeof input === 'string' ? new TextEncoder().encode(input) : input
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+function normalizeFingerprintPart(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
 export async function uploadDepositProof(file: File) {
   const userId = await getUserId()
   if (!file || file.size > 5 * 1024 * 1024 || !['image/jpeg', 'image/png', 'application/pdf'].includes(file.type)) throw new Error('Upload a JPG, PNG, or PDF proof under 5MB')
   const extension = file.name.split('.').pop()?.toLowerCase() || 'bin'
   const safeName = `${crypto.randomUUID()}.${extension}`
   const path = `${userId}/${safeName}`
+  const proofHash = await sha256Hex(await file.arrayBuffer())
   const supabase = await createClient()
+  const { data: existingProof } = await supabase.from('quantix_deposits').select('id,user_id,status').eq('proof_sha256', proofHash).limit(1).maybeSingle()
+  if (existingProof) throw new Error('This payment proof has already been submitted and cannot be reused for another deposit.')
   const { error } = await supabase.storage.from('deposit-proofs').upload(path, file, { contentType: file.type, upsert: false })
   if (error) {
     const message = error.message.toLowerCase()
@@ -175,10 +188,10 @@ export async function uploadDepositProof(file: File) {
     if (message.includes('row-level') || message.includes('permission')) throw new Error('Payment proof upload is not authorized. Please sign in again and retry.')
     throw new Error('Unable to upload payment proof. Please try again.')
   }
-  return path
+  return { path, proofHash }
 }
 
-const walletDepositSchema = z.object({ amountMinor: z.coerce.number().int().positive().max(100_000_000_000), paymentAccountId: z.string().trim().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, 'Invalid deposit account.'), transferReference: z.string().trim().min(4).max(120), senderName: z.string().trim().min(2).max(120), proofPathname: z.string().trim().min(1).max(500) })
+const walletDepositSchema = z.object({ amountMinor: z.coerce.number().int().positive().max(100_000_000_000), paymentAccountId: z.string().trim().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, 'Invalid deposit account.'), depositReference: z.string().trim().regex(/^QP-[A-Z0-9]{10}$/, 'Invalid deposit reference.'), transferReference: z.string().trim().min(4).max(120), senderName: z.string().trim().min(2).max(120), proofPathname: z.string().trim().min(1).max(500), proofHash: z.string().trim().regex(/^[0-9a-f]{64}$/, 'Invalid payment proof fingerprint.') })
 
 export async function submitWalletDeposit(input: z.input<typeof walletDepositSchema>) {
   const userId = await getUserId()
@@ -195,18 +208,27 @@ export async function submitWalletDeposit(input: z.input<typeof walletDepositSch
   }
   const { data: account, error: accountError } = await supabase.from('quantix_payment_accounts').select('id').eq('id', data.paymentAccountId).eq('active', true).maybeSingle()
   if (accountError || !account) throw new Error('Funding account is not available. Please refresh and select an active account.')
-  const { data: deposit, error } = await supabase.rpc('submit_deposit_atomic', {
+  const transactionFingerprint = await sha256Hex([
+    data.amountMinor.toString(),
+    data.paymentAccountId,
+    normalizeFingerprintPart(data.senderName),
+    normalizeFingerprintPart(data.transferReference),
+  ].join('|'))
+  const { data: deposit, error } = await supabase.rpc('submit_deposit_secure', {
+    p_deposit_reference: data.depositReference,
     p_amount_minor: data.amountMinor,
     p_payment_account_id: data.paymentAccountId,
     p_sender_name: data.senderName,
     p_transfer_reference: data.transferReference,
     p_proof_url: data.proofPathname,
     p_payment_proof_name: data.proofPathname.split('/').pop(),
+    p_proof_sha256: data.proofHash,
+    p_transaction_fingerprint: transactionFingerprint,
   })
   if (error || !deposit) {
     await supabase.storage.from('deposit-proofs').remove([data.proofPathname])
     const message = error?.message?.toLowerCase() || ''
-    if (message.includes('duplicate') || message.includes('reference')) throw new Error('This transfer reference has already been submitted.')
+    if (message.includes('duplicate') || message.includes('already been submitted') || message.includes('proof')) throw new Error(message.includes('proof') ? 'This payment proof has already been submitted and cannot be reused.' : 'This deposit or payment reference has already been submitted.')
     throw new Error('Your deposit proof could not be submitted. Please check the details and try again.')
   }
   revalidatePath('/')
