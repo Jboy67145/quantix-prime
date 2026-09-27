@@ -29,6 +29,16 @@ export default function ControlCenter(){
  const [error,setError]=useState('')
  const [success,setSuccess]=useState('')
  const [q,setQ]=useState('')
+ const [walletQ,setWalletQ]=useState('')
+ const [depositQ,setDepositQ]=useState('')
+ const [withdrawalQ,setWithdrawalQ]=useState('')
+ const [investmentQ,setInvestmentQ]=useState('')
+ const [referralQ,setReferralQ]=useState('')
+ const [luckyQ,setLuckyQ]=useState('')
+ const [payoutQ,setPayoutQ]=useState('')
+ const [ledgerQ,setLedgerQ]=useState('')
+ const [auditQ,setAuditQ]=useState('')
+ const [accountQ,setAccountQ]=useState('')
  const [manageOpen,setManageOpen]=useState(false)
  const [marqueeManageOpen,setMarqueeManageOpen]=useState(false)
  const [selectedUser,setSelectedUser]=useState<any>(null)
@@ -84,6 +94,25 @@ export default function ControlCenter(){
 
  const users=useMemo(()=>{const term=q.trim().toLowerCase(); return data?.profiles?.filter((u:any)=>!term||[u.name,u.username,u.email,u.id].some((v:any)=>String(v||'').toLowerCase().includes(term)))||[]},[data,q])
  const walletForUser=selectedUser?data?.wallets?.find((w:any)=>w.user_id===selectedUser.id):null
+ const filterRows=(rows:any[],term:string,fields:string[])=>{const t=term.trim().toLowerCase();return rows.filter((x:any)=>!t||fields.some(f=>String(x?.[f]??'').toLowerCase().includes(t)))}
+ const filteredWallets=useMemo(()=>filterRows(data?.wallets||[],walletQ,['username','user_name','user_email','user_id','available_minor','invested_minor','profit_minor']),[data,walletQ])
+ const filteredDeposits=useMemo(()=>filterRows(data?.deposits||[],depositQ,['username','user_name','user_email','user_id','status','deposit_reference','sender_name','transfer_reference','amount_minor','payment_proof_name']),[data,depositQ])
+ const filteredWithdrawals=useMemo(()=>filterRows(data?.withdrawals||[],withdrawalQ,['username','user_name','user_email','user_id','status','amount_minor','net_minor','account_name','account_number','bank_name']),[data,withdrawalQ])
+ const filteredInvestments=useMemo(()=>filterRows(data?.investments||[],investmentQ,['username','user_name','user_email','user_id','plan_name_snapshot','status','principal_minor','profit_minor','maturity_minor']),[data,investmentQ])
+ const filteredReferrals=useMemo(()=>filterRows(data?.referrals||[],referralQ,['referrer_username','referred_username','referrer_name','referred_name','referrer_user_id','referred_user_id','status','reward_minor']),[data,referralQ])
+ const filteredLucky=useMemo(()=>filterRows(data?.draws||[],luckyQ,['title','description','reward_type','reward_minor','alternate_reward','status']),[data,luckyQ])
+ const filteredPayouts=useMemo(()=>filterRows(data?.payouts||[],payoutQ,['username','user_name','user_email','user_id','bank_name','account_name','account_number']),[data,payoutQ])
+ const filteredLedger=useMemo(()=>filterRows(data?.ledger||[],ledgerQ,['username','user_name','user_email','user_id','type','direction','status','reference','amount_minor']),[data,ledgerQ])
+ const filteredAudits=useMemo(()=>filterRows(data?.audits||[],auditQ,['action','target_type','target_id','actor_id','reason']),[data,auditQ])
+ const filteredAccounts=useMemo(()=>filterRows(data?.accounts||[],accountQ,['label','bank_name','account_name','account_number','active']),[data,accountQ])
+ const userRecords=selectedUser?{
+   investments:data.investments.filter((x:any)=>x.user_id===selectedUser.id),
+   deposits:data.deposits.filter((x:any)=>x.user_id===selectedUser.id),
+   withdrawals:data.withdrawals.filter((x:any)=>x.user_id===selectedUser.id),
+   referralsOut:data.referrals.filter((x:any)=>x.referrer_user_id===selectedUser.id),
+   referralsIn:data.referrals.filter((x:any)=>x.referred_user_id===selectedUser.id),
+   ledger:data.ledger.filter((x:any)=>x.user_id===selectedUser.id),
+ } : null
  const copyValue=async(key:string,value:any,_label?:string)=>{try{await navigator.clipboard.writeText(String(value??''));setCopied(key);window.setTimeout(()=>setCopied(''),1400)}catch{setError('Unable to copy this value. You can select the text manually.')}}
  const withdrawalAccount=(x:any)=>x.payout_account_snapshot||data.payouts?.find((p:any)=>p.id===x.payout_account_id)||{}
 
@@ -174,7 +203,7 @@ export default function ControlCenter(){
         <div className="mt-3 grid gap-2 sm:grid-cols-2"><input className="account-form" placeholder="Full name" value={profile.name} onChange={e=>setProfile({...profile,name:e.target.value})}/><input className="account-form" placeholder="Username" value={profile.username} onChange={e=>setProfile({...profile,username:e.target.value})}/></div>
         <button type="button" className="secondary-button mt-3" disabled={Boolean(busy)} onClick={()=>act('profile-users',()=>updateUserProfile({id:selectedUser.id,name:profile.name,username:profile.username}),'User profile saved.')}>Save profile changes</button>
        </div>
-       <div className="mt-5 border-t border-white/10 pt-5">
+       <div className="mt-5 border-t border-white/10 pt-5"><div className="mb-3 flex items-center justify-between"><h4 className="font-semibold">User record count</h4><span className="text-xs opacity-50">All records currently loaded</span></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-3"><div className="rounded-2xl border border-white/10 p-3"><span className="text-xs opacity-50">Investments</span><strong className="block">{userRecords?.investments.length||0}</strong></div><div className="rounded-2xl border border-white/10 p-3"><span className="text-xs opacity-50">Deposits</span><strong className="block">{userRecords?.deposits.length||0}</strong></div><div className="rounded-2xl border border-white/10 p-3"><span className="text-xs opacity-50">Withdrawals</span><strong className="block">{userRecords?.withdrawals.length||0}</strong></div><div className="rounded-2xl border border-white/10 p-3"><span className="text-xs opacity-50">Referrals out</span><strong className="block">{userRecords?.referralsOut.length||0}</strong></div><div className="rounded-2xl border border-white/10 p-3"><span className="text-xs opacity-50">Referrals in</span><strong className="block">{userRecords?.referralsIn.length||0}</strong></div><div className="rounded-2xl border border-white/10 p-3"><span className="text-xs opacity-50">Ledger entries</span><strong className="block">{userRecords?.ledger.length||0}</strong></div></div></div><div className="mt-5 border-t border-white/10 pt-5">
         <div className="mb-3 flex items-center justify-between"><h4 className="font-semibold">Recent user activity</h4><span className="text-xs opacity-50">Latest 2 ledger entries</span></div>
         <div className="space-y-2">
          {data.ledger.filter((x:any)=>x.user_id===selectedUser.id).slice(0,2).map((x:any)=><Row key={x.id} title={(x.type||'ACTIVITY').replaceAll('_',' ')+' · '+(x.direction==='CREDIT'?'+':'-')+naira(x.amount_minor)} meta={(x.status||'')+' · '+date(x.created_at)+' · '+(x.reference||'No reference')}/>)}
@@ -187,15 +216,16 @@ export default function ControlCenter(){
     {tab==='wallet'&&<Panel title="Audited wallet control">
       <p className="admin-copy">All balance changes use the atomic financial function and create an audit record. Positive amounts credit; negative amounts debit.</p>
       <div className="mb-5 rounded-3xl border border-white/10 bg-black/20 p-4">
-       <div className="mb-3 flex items-center justify-between gap-3"><div><h3 className="font-semibold">All user balances</h3><p className="text-xs opacity-60">Live values from the wallet records. The list refreshes automatically every 15 seconds.</p></div><div className="secondary-button"><Users size={15}/>{users.length} accounts</div></div>
+       <SearchBox value={walletQ} onChange={setWalletQ} placeholder="Search username, name, email or user ID" count={filteredWallets.length} total={data.wallets.length}/>
+       <div className="mb-3 flex items-center justify-between gap-3"><div><h3 className="font-semibold">All user balances</h3><p className="text-xs opacity-60">Search by username, name, email or user ID.</p></div><div className="secondary-button"><Users size={15}/>{filteredWallets.length} accounts</div></div>
        <div className="space-y-2">
-        {users.map((u:any)=><div key={u.id} className="grid gap-2 rounded-2xl border border-white/10 bg-black/20 p-3 sm:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))_auto] sm:items-center">
+        {filteredWallets.map((w:any)=>{const u=data.profiles.find((p:any)=>p.id===w.user_id);return u&&<div key={u.id} className="grid gap-2 rounded-2xl border border-white/10 bg-black/20 p-3 sm:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))_auto] sm:items-center">
          <div className="min-w-0"><div className="truncate font-medium">{u.name||'Unnamed'} · {u.username||'No username'}</div><div className="truncate text-xs opacity-50">{u.email||u.id}</div></div>
          <div><div className="text-[10px] uppercase tracking-wider opacity-50">Available</div><div className="font-semibold">{naira(u.available_balance_minor)}</div></div>
          <div><div className="text-[10px] uppercase tracking-wider opacity-50">Invested</div><div className="font-semibold">{naira(u.invested_balance_minor)}</div></div>
          <div><div className="text-[10px] uppercase tracking-wider opacity-50">Profit</div><div className="font-semibold">{naira(u.profit_balance_minor)}</div></div>
          <button type="button" className="secondary-button" onClick={()=>selectUser(u)}>Manage</button>
-        </div>)}
+        </div>})}
        </div>
       </div>
       <label className="block text-sm opacity-80 mb-2">Select user
@@ -224,7 +254,8 @@ export default function ControlCenter(){
     </Panel>}
 
     {tab==='deposits'&&<Panel title="All deposits">
-      {data.deposits.map((x:any)=>{
+      <SearchBox value={depositQ} onChange={setDepositQ} placeholder="Search username, name, deposit reference, sender or bank reference" count={filteredDeposits.length} total={data.deposits.length}/>
+      {filteredDeposits.map((x:any)=>{
        const funding=data.accounts.find((a:any)=>a.id===x.payment_account_id)
        const duplicateTransaction = Boolean(x.transaction_fingerprint) && data.deposits.some((other:any)=>other.id!==x.id && other.user_id!==x.user_id && other.transaction_fingerprint===x.transaction_fingerprint)
        return <Row key={x.id} title={x.status+' · '+naira(x.amount_minor)} meta={x.user_id+' · '+date(x.created_at)}>
@@ -255,7 +286,8 @@ export default function ControlCenter(){
     </Panel>}
 
     {tab==='withdrawals'&&<Panel title="All withdrawals">
-      {data.withdrawals.map((x:any)=>{
+      <SearchBox value={withdrawalQ} onChange={setWithdrawalQ} placeholder="Search username, name, bank or account number" count={filteredWithdrawals.length} total={data.withdrawals.length}/>
+      {filteredWithdrawals.map((x:any)=>{
        const a=withdrawalAccount(x)
        const accountName=a.account_name||a.accountName||'—'
        const bankName=a.bank_name||a.bankName||'—'
@@ -288,8 +320,9 @@ export default function ControlCenter(){
     </Panel>}
 
     {tab==='investments'&&<Panel title="Investment lifecycle">
+      <SearchBox value={investmentQ} onChange={setInvestmentQ} placeholder="Search username, name, plan, status or investment ID" count={filteredInvestments.length} total={data.investments.length}/>
       <p className="admin-copy mb-4">Investments are state-transition records. Cancellation is protected by a server-side atomic transaction, requires a reason, reverses the linked purchase bonus when present, updates the wallet, and records an audit entry. Historical records are never hard-deleted.</p>
-      {data.investments.map((x:any)=><Row key={x.id} title={x.plan_name_snapshot+' · '+x.status} meta={x.user_id+' · principal '+naira(x.principal_minor)+' · maturity '+naira(x.maturity_minor)+' · '+date(x.matures_at)}>
+      {filteredInvestments.map((x:any)=><Row key={x.id} title={(x.username?'@'+x.username+' · ':'')+x.plan_name_snapshot+' · '+x.status} meta={(x.user_name||'User')+' · '+x.user_id+' · principal '+naira(x.principal_minor)+' · maturity '+naira(x.maturity_minor)+' · '+date(x.matures_at)}>
        {x.status==='ACTIVE'&&new Date(x.matures_at).getTime()<=Date.now()&&<button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>processInvestmentMaturity(x.id),'Investment maturity processed.')}>Process maturity</button>}
        {x.status==='ACTIVE'&&new Date(x.matures_at).getTime()>Date.now()&&<span className="secondary-button"><Clock3 size={15}/> Not due</span>}
        {x.status==='ACTIVE'&&<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>{setCancelTarget(x);setCancelReason('')}}>Cancel investment</button>}
@@ -320,8 +353,9 @@ export default function ControlCenter(){
     </div>}
 
     {tab==='referrals'&&<Panel title="Referral records">
+      <SearchBox value={referralQ} onChange={setReferralQ} placeholder="Search referrer or referred username" count={filteredReferrals.length} total={data.referrals.length}/>
       <p className="admin-copy mb-4">Set the reward, then mark a pending referral qualified. Qualification credits the referrer wallet once, creates a ledger entry, and records an audit event. A paid referral cannot be reset or paid twice.</p>
-      {data.referrals.map((x:any)=><Row key={x.id} title={x.status+' · '+naira(x.reward_minor)} meta={x.referrer_user_id+' → '+x.referred_user_id+' · '+date(x.created_at)}>
+      {filteredReferrals.map((x:any)=><Row key={x.id} title={x.status+' · '+naira(x.reward_minor)} meta={'@'+(x.referrer_username||'unknown')+' → @'+(x.referred_username||'unknown')+' · '+date(x.created_at)}>
        {x.status==='PENDING'&&<>
         <input
           className="w-40 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm"
@@ -341,9 +375,10 @@ export default function ControlCenter(){
     </Panel>}
 
     {tab==='lucky'&&<div className="grid gap-4 lg:grid-cols-[1fr_390px]">
-      <Panel title="Lucky Wish draws"><p className="admin-copy mb-4">Only OPEN draws whose opening time has arrived and closing time has not passed appear in the user Lucky Wish area. Create multiple draws to show multiple live rewards at once.</p>{data.draws.map((x:any)=><Row key={x.id} title={x.status+' · '+x.title} meta={x.reward_type+' · '+naira(x.reward_minor||0)+' · '+date(x.closes_at)}>
+      <Panel title="Lucky Wish draws"><SearchBox value={luckyQ} onChange={setLuckyQ} placeholder="Search draw title, reward or status" count={filteredLucky.length} total={data.draws.length}/><p className="admin-copy mb-4">Only OPEN draws whose opening time has arrived and closing time has not passed appear in the user Lucky Wish area. Create multiple draws to show multiple live rewards at once.</p>{filteredLucky.map((x:any)=><Row key={x.id} title={x.status+' · '+x.title} meta={x.reward_type+' · '+naira(x.reward_minor||0)+' · '+date(x.closes_at)}>
        <button type="button" className="secondary-button" onClick={()=>setDraw({id:x.id,title:x.title,description:x.description||'',rewardType:x.reward_type,rewardMinor:Number(x.reward_minor||0),alternateReward:x.alternate_reward||'',entryCostMinor:Number(x.entry_cost_minor||0),opensAt:new Date(x.opens_at).toISOString().slice(0,16),closesAt:new Date(x.closes_at).toISOString().slice(0,16)})}>Edit</button>
        <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>toggleDraw(x.id,x.status!=='OPEN'),x.status==='OPEN'?'Draw closed.':'Draw opened.')}>{x.status==='OPEN'?'Close':'Open'}</button>
+       <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>{const ok=window.confirm('Delete this Lucky Wish draw? All entries for this draw will also be deleted and the action will be permanently audited.');if(ok)void act('delete-draw',()=>deleteDraw(x.id,'Administrative Lucky Wish deletion'),'Lucky Wish deleted.')}}>Delete</button>
       </Row>)}{!data.draws.length&&<Empty text="No draws yet."/>}</Panel>
       <Panel title={draw.id?'Edit draw':'Create draw'}><div className="grid gap-2">
        <div><input className="account-form" placeholder="Title · e.g. Friday ₦500 Airtime Draw" value={draw.title} onChange={e=>setDraw({...draw,title:e.target.value})}/><p className="mt-1 text-xs opacity-50">Example: “Friday ₦500 Airtime Draw” — use a short name users will immediately understand.</p></div>
@@ -367,15 +402,17 @@ export default function ControlCenter(){
     </div></Panel>}
 
     {tab==='accounts'&&<Panel title="Payment accounts">
+      <SearchBox value={accountQ} onChange={setAccountQ} placeholder="Search bank, account name or account number" count={filteredAccounts.length} total={data.accounts.length}/>
       <a className="primary-button inline-flex" href="/admin/accounts">Open bank-account editor</a>
-      {data.accounts.map((x:any)=><Row key={x.id} title={x.bank_name+' · '+(x.active?'VISIBLE':'HIDDEN')} meta={x.account_name+' · '+x.account_number}>
+      {filteredAccounts.map((x:any)=><Row key={x.id} title={x.bank_name+' · '+(x.active?'VISIBLE':'HIDDEN')} meta={x.account_name+' · '+x.account_number}>
        <a className="secondary-button" href="/admin/accounts">Edit</a>
        <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>setPaymentAccountActive(x.id,!x.active),x.active?'Account hidden.':'Account activated.')}>{x.active?'Hide':'Activate'}</button>
       </Row>)}
     </Panel>}
 
     {tab==='payouts'&&<Panel title="User payout accounts">
-      {data.payouts.map((x:any)=><Row key={x.id} title={x.bank_name+' · '+x.account_name+(x.deleted_at?' · ARCHIVED':'')} meta={x.user_id+' · '+x.account_number+(x.is_default?' · DEFAULT':'')}>
+      <SearchBox value={payoutQ} onChange={setPayoutQ} placeholder="Search username, name, bank or account number" count={filteredPayouts.length} total={data.payouts.length}/>
+      {filteredPayouts.map((x:any)=><Row key={x.id} title={x.bank_name+' · '+x.account_name+(x.deleted_at?' · ARCHIVED':'')} meta={x.user_id+' · '+x.account_number+(x.is_default?' · DEFAULT':'')}>
        {x.deleted_at
         ?<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>restorePayout(x.id,'Admin restored payout account'),'Payout account restored.') }><RotateCcw size={15}/>Restore</button>
         :<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>archivePayout(x.id,'Admin archived payout account'),'Payout account archived.')}><Archive size={15}/>Archive</button>}
@@ -383,8 +420,8 @@ export default function ControlCenter(){
       {!data.payouts.length&&<Empty text="No payout accounts yet."/>}
     </Panel>}
 
-    {tab==='ledger'&&<Panel title="Financial ledger"><p className="admin-copy mb-3">Ledger entries are intentionally read-only. Financial history is not hard-deleted.</p>{data.ledger.map((x:any)=><Row key={x.id} title={x.type+' · '+x.direction+' · '+naira(x.amount_minor)} meta={x.user_id+' · '+x.reference+' · '+date(x.created_at)}/>)}</Panel>}
-    {tab==='audit'&&<Panel title="Audit log">{data.audits.map((x:any)=><Row key={x.id} title={x.action} meta={(x.actor_id||'system')+' · '+x.target_type+' · '+date(x.created_at)}>{x.reason&&<span className="text-xs opacity-60">{x.reason}</span>}</Row>)}</Panel>}
+    {tab==='ledger'&&<Panel title="Financial ledger"><SearchBox value={ledgerQ} onChange={setLedgerQ} placeholder="Search username, type, reference or amount" count={filteredLedger.length} total={data.ledger.length}/><p className="admin-copy mb-3">Ledger entries are intentionally read-only. Financial history is not hard-deleted.</p>{filteredLedger.map((x:any)=><Row key={x.id} title={(x.username?'@'+x.username+' · ':'')+x.type+' · '+x.direction+' · '+naira(x.amount_minor)} meta={(x.user_name||x.user_id)+' · '+x.reference+' · '+date(x.created_at)}/>)}</Panel>}
+    {tab==='audit'&&<Panel title="Audit log"><SearchBox value={auditQ} onChange={setAuditQ} placeholder="Search action, target, actor or reason" count={filteredAudits.length} total={data.audits.length}/>{filteredAudits.map((x:any)=><Row key={x.id} title={x.action} meta={(x.actor_id||'system')+' · '+x.target_type+' · '+date(x.created_at)}>{x.reason&&<span className="text-xs opacity-60">{x.reason}</span>}</Row>)}</Panel>}
 
     {tab==='settings'&&<div className="grid gap-4 lg:grid-cols-2">
       <Panel title="Withdrawal policy"><div className="grid gap-3">
@@ -417,6 +454,7 @@ export default function ControlCenter(){
  </main>
 }
 
+function SearchBox({value,onChange,placeholder,count,total}:{value:string;onChange:(v:string)=>void;placeholder:string;count:number;total:number}){return <div className="mb-4 flex items-center gap-2"><Search size={17} className="shrink-0 opacity-50"/><input className="account-form flex-1" value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} aria-label={placeholder}/>{value.trim()&&<button type="button" className="secondary-button" onClick={()=>onChange('')}>Clear</button>}<span className="text-xs whitespace-nowrap opacity-50">{count}/{total}</span></div>}
 function Panel(p:any){return <section className="rounded-3xl border border-white/10 bg-white/5 p-5"><h2 className="mb-4 text-lg font-semibold">{p.title}</h2>{p.children}</section>}
 function Row(p:any){return <article className="mb-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 p-4"><div className="min-w-0"><strong className="block break-words">{p.title}</strong><span className="text-xs opacity-60 break-all">{p.meta}</span></div><div className="flex flex-wrap gap-2">{p.children}</div></article>}
 function Empty({text}:{text:string}){return <div className="rounded-2xl border border-dashed border-white/10 p-6 text-sm opacity-60">{text}</div>}
