@@ -258,7 +258,7 @@ export default function ControlCenter(){
       {filteredDeposits.map((x:any)=>{
        const funding=data.accounts.find((a:any)=>a.id===x.payment_account_id)
        const duplicateTransaction = Boolean(x.transaction_fingerprint) && data.deposits.some((other:any)=>other.id!==x.id && other.user_id!==x.user_id && other.transaction_fingerprint===x.transaction_fingerprint)
-       return <Row key={x.id} title={x.status+' · '+naira(x.amount_minor)} meta={x.user_id+' · '+date(x.created_at)}>
+       return <Row key={x.id} title={(x.username?'@'+x.username+' · ':'')+x.status+' · '+naira(x.amount_minor)} meta={(x.user_name||'User')+' · '+x.user_id+' · '+date(x.created_at)}>
         <div className="w-full rounded-2xl border border-white/10 bg-black/30 p-4">
          <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div className="text-sm font-semibold">Submitted deposit details</div>{duplicateTransaction&&<span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-200">Potential transaction duplicate</span>}</div>
          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -293,7 +293,7 @@ export default function ControlCenter(){
        const bankName=a.bank_name||a.bankName||'—'
        const accountNumber=a.account_number||a.accountNumber||'—'
        const copyBtn=(key:string,value:string,label:string)=><button type="button" className="secondary-button" aria-label={`Copy ${label}`} title={`Copy ${label}`} onClick={()=>copyValue(key,value)}>{copied===key?<Check size={15}/>:<Copy size={15}/>}<span>{copied===key?'Copied':label}</span></button>
-       return <Row key={x.id} title={x.status+' · '+naira(x.amount_minor)} meta={x.user_id+' · net '+naira(x.net_minor)+' · '+date(x.created_at)}>
+       return <Row key={x.id} title={(x.username?'@'+x.username+' · ':'')+x.status+' · '+naira(x.amount_minor)} meta={(x.user_name||'User')+' · '+x.user_id+' · net '+naira(x.net_minor)+' · '+date(x.created_at)}>
         <div className="w-full rounded-2xl border border-white/10 bg-black/30 p-4">
          <div className="mb-3 text-sm font-semibold">Submitted payout account</div>
          <div className="grid gap-3 sm:grid-cols-3">
@@ -412,7 +412,7 @@ export default function ControlCenter(){
 
     {tab==='payouts'&&<Panel title="User payout accounts">
       <SearchBox value={payoutQ} onChange={setPayoutQ} placeholder="Search username, name, bank or account number" count={filteredPayouts.length} total={data.payouts.length}/>
-      {filteredPayouts.map((x:any)=><Row key={x.id} title={x.bank_name+' · '+x.account_name+(x.deleted_at?' · ARCHIVED':'')} meta={x.user_id+' · '+x.account_number+(x.is_default?' · DEFAULT':'')}>
+      {filteredPayouts.map((x:any)=><Row key={x.id} title={(x.username?'@'+x.username+' · ':'')+x.bank_name+' · '+x.account_name+(x.deleted_at?' · ARCHIVED':'')} meta={(x.user_name||'User')+' · '+x.user_id+' · '+x.account_number+(x.is_default?' · DEFAULT':'')}>
        {x.deleted_at
         ?<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>restorePayout(x.id,'Admin restored payout account'),'Payout account restored.') }><RotateCcw size={15}/>Restore</button>
         :<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>archivePayout(x.id,'Admin archived payout account'),'Payout account archived.')}><Archive size={15}/>Archive</button>}
