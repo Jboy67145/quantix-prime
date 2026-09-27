@@ -67,21 +67,53 @@ export default function Page() {
     const refreshLuckyDraws = () => getOpenDraws().then((v) => setDraws(v as Draw[])).catch(() => {})
     refreshLuckyDraws()
     const luckyTimer = window.setInterval(refreshLuckyDraws, 30000)
+    const setupNotifications = async () => {
+      if (!('serviceWorker' in navigator)) {
+        setNotificationPermission('unsupported')
+        return
+      }
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js')
+        if ('Notification' in window) setNotificationPermission(Notification.permission)
+        if ('Notification' in window && Notification.permission === 'granted') {
+          const existing = await registration.pushManager.getSubscription()
+          if (existing) {
+            const json = existing.toJSON()
+            if (json.endpoint && json.keys?.p256dh && json.keys?.auth) {
+              await saveNotificationSubscription({ endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth })
+            }
+          }
+        }
+      } catch {}
+    }
+
     const refreshNotices = async () => {
       try {
         const next = (await getNotifications()) as Notice[]
         setNotices(current => {
           const currentIds = new Set(current.map(n => n.id))
-          if (notificationBootstrapped.current && next.length) {
-            const fresh = next.find(n => !currentIds.has(n.id))
-            if (fresh) setNewNotice(fresh)
+          if (notificationBootstrapped.current) {
+            const fresh = next.filter(n => !currentIds.has(n.id))
+            if (fresh[0]) {
+              setNewNotice(fresh[0])
+              if (notificationPermission === 'granted') {
+                void navigator.serviceWorker.ready.then(registration => registration.showNotification(fresh[0].title, {
+                  body: fresh[0].body,
+                  icon: '/icon-dark-32x32.png',
+                  badge: '/icon-dark-32x32.png',
+                  tag: fresh[0].id,
+                  data: { notificationId: fresh[0].id, url: '/' },
+                })).catch(() => {})
+              }
+            }
           }
+          notificationBootstrapped.current = true
           return next
         })
-        notificationBootstrapped.current = true
       } catch {}
     }
     const refreshMarquees = () => getMarqueeHighlights().then((v) => setMarquees(v as any[])).catch(() => {})
+    void setupNotifications()
     void refreshNotices()
     void refreshMarquees()
     const noticeTimer = window.setInterval(refreshNotices, 10000)
