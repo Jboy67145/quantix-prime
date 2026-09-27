@@ -49,36 +49,14 @@ export async function POST(request: Request) {
 
     const user = data.user
 
-    if (/^[A-Z0-9_]{3,32}$/.test(referralCode)) {
-      const { data: profile } = await admin
-        .from('profiles')
-        .select('id, invite_code, referred_by_code')
-        .eq('id', user.id)
-        .maybeSingle()
-
-      // Referral is optional and can only be attached once.
-      if (!profile?.referred_by_code) {
-        const { data: referrer } = await admin
-          .from('profiles')
-          .select('id, invite_code')
-          .ilike('invite_code', referralCode)
-          .neq('id', user.id)
-          .maybeSingle()
-
-        if (referrer) {
-          await admin.from('profiles')
-            .update({ referred_by_code: referrer.invite_code })
-            .eq('id', user.id)
-            .is('referred_by_code', null)
-
-          await admin.from('quantix_referrals').insert({
-            referrer_user_id: referrer.id,
-            referred_user_id: user.id,
-            invite_code: referrer.invite_code,
-            reward_minor: 0,
-            status: 'PENDING',
-          })
-        }
+    if (referralCode) {
+      const { error: referralError } = await admin.rpc('attach_referral_atomic', {
+        p_referred_user_id: user.id,
+        p_referral_code: referralCode,
+      })
+      if (referralError) {
+        // Referral attachment must never block account creation. The code is optional.
+        // The callback performs the same idempotent attachment after session creation.
       }
     }
 
