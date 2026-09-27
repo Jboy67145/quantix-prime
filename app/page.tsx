@@ -140,7 +140,13 @@ export default function Page() {
     try { await signOut() } finally { router.replace('/sign-in'); router.refresh() }
   }
 
-  return <main className={dark ? 'quantix-shell dark' : 'quantix-shell light'}><div className="app-frame"><header className="topbar"><div className="brand-lockup"><div className="brand-mark"><Zap size={17} /></div><div><strong>quantix</strong><span>PRIME</span></div></div><div className="top-actions"><button className="icon-button" aria-label="Refresh page" title="Refresh entire system" onClick={() => window.location.reload()}><RefreshCw size={18} /></button><button className="icon-button notification-dot" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Bell size={18} />{notices.some((n) => !n.readAt) && <i />}</button><button className="icon-button" aria-label="Toggle theme" onClick={() => setDark(!dark)}>{dark ? <Sun size={18} /> : <Moon size={18} />}</button></div></header>{notificationsOpen && <NotificationPanel notices={notices} close={() => setNotificationsOpen(false)} />}{tab === 'home' && <Home setTab={setTab} notices={notices} marquees={marquees} wallet={wallet} profile={referral?.profile} />}{tab === 'wallet' && <WalletDashboard notify={notify} />}{tab === 'lucky' && <Lucky draws={draws} refresh={() => getOpenDraws().then((v) => setDraws(v as Draw[]))} notify={notify} />}{tab === 'invest' && <Invest plans={plans} investments={investments} open={(p) => setSelected(p)} />}{tab === 'team' && <Team notify={notify} referral={referral} />}{tab === 'me' && <Me logout={logout} />}{selected && <InvestmentSheet plan={selected} close={() => setSelected(null)} notify={notify} />}{toast && <div className="toast" role="status">{toast}</div>}{newNotice && <NotificationPopup notice={newNotice} onReadMore={async () => { try { await markNotificationRead(newNotice.id) } catch {} setNewNotice(null); setNotificationsOpen(true) }} />}<nav className="bottom-nav" aria-label="Primary navigation"><Nav active={tab} id="home" label="Home" icon={HomeIcon} set={setTab} /><Nav active={tab} id="wallet" label="Wallet" icon={Wallet} set={setTab} /><Nav active={tab} id="lucky" label="Lucky Wish" icon={Gift} set={setTab} /><Nav active={tab} id="invest" label="Invest" icon={TrendingUp} set={setTab} /><Nav active={tab} id="team" label="Team" icon={Users} set={setTab} /><Nav active={tab} id="me" label="Me" icon={ShieldCheck} set={setTab} /></nav></div></main>
+  return <main className={dark ? 'quantix-shell dark' : 'quantix-shell light'}><div className="app-frame"><header className="topbar"><div className="brand-lockup"><div className="brand-mark"><Zap size={17} /></div><div><strong>quantix</strong><span>PRIME</span></div></div><div className="top-actions"><button className="icon-button" aria-label="Refresh page" title="Refresh entire system" onClick={() => window.location.reload()}><RefreshCw size={18} /></button><button className="icon-button notification-dot" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Bell size={18} />{notices.some((n) => !n.readAt) && <i />}</button><button className="icon-button" aria-label="Toggle theme" onClick={() => setDark(!dark)}>{dark ? <Sun size={18} /> : <Moon size={18} />}</button></div></header>{notificationsOpen && <NotificationPanel notices={notices} close={() => setNotificationsOpen(false)} />}{tab === 'home' && <Home setTab={setTab} notices={notices} marquees={marquees} wallet={wallet} profile={referral?.profile} />}{tab === 'wallet' && <WalletDashboard notify={notify} />}{tab === 'lucky' && <Lucky draws={draws} refresh={() => getOpenDraws().then((v) => setDraws(v as Draw[]))} notify={notify} />}{tab === 'invest' && <Invest plans={plans} investments={investments} open={(p) => setSelected(p)} />}{tab === 'team' && <Team notify={notify} referral={referral} />}{tab === 'me' && <Me logout={logout} />}{selected && <InvestmentSheet plan={selected} close={() => setSelected(null)} notify={notify} />}{toast && <div className="toast" role="status">{toast}</div>}{newNotice && <NotificationPopup notice={newNotice} onReadMore={async () => {
+  const id = newNotice.id
+  try { await markNotificationRead(id) } catch {}
+  setNotices(current => current.map(n => n.id === id ? { ...n, readAt: new Date().toISOString() } : n))
+  setNewNotice(null)
+  setNotificationsOpen(true)
+}} />}<nav className="bottom-nav" aria-label="Primary navigation"><Nav active={tab} id="home" label="Home" icon={HomeIcon} set={setTab} /><Nav active={tab} id="wallet" label="Wallet" icon={Wallet} set={setTab} /><Nav active={tab} id="lucky" label="Lucky Wish" icon={Gift} set={setTab} /><Nav active={tab} id="invest" label="Invest" icon={TrendingUp} set={setTab} /><Nav active={tab} id="team" label="Team" icon={Users} set={setTab} /><Nav active={tab} id="me" label="Me" icon={ShieldCheck} set={setTab} /></nav></div></main>
 }
 
 function Nav({ active, id, label, icon: Icon, set }: any) { return <button className={active === id ? 'nav-item active' : 'nav-item'} onClick={() => set(id)}><Icon /><span>{label}</span></button> }
@@ -196,5 +202,68 @@ function Me({ logout }: any) {
 }
 function MarqueeBar({items}:{items:any[]}) { const loop=[...items,...items]; return <section className="marquee-bar" aria-label="Quantix highlights"><div className="marquee-label"><Zap size={14}/><span>LIVE</span></div><div className="marquee-viewport"><div className="marquee-track">{loop.map((item:any,i:number)=><div className="marquee-item" key={item.id+'-'+i}><b>{item.title}</b><span>{item.content}</span></div>)}</div></div></section> }
 function NotificationPopup({notice,onReadMore}:{notice:Notice;onReadMore:()=>void}) { return <div className="notification-popup" role="dialog" aria-label="New notification"><div className="notification-new"><Bell size={13}/> NEW</div><h3>{notice.title}</h3><p>{notice.body}</p><button className="primary-button full" onClick={onReadMore}>Read more <Bell size={15}/></button></div> }
-function NotificationPanel({ notices, close }: { notices: Notice[]; close: () => void }) { return <div className="notification-panel"><div className="sheet-title"><div><p className="eyebrow">Updates</p><h2>Notifications</h2></div><button className="icon-button" onClick={close}><X size={17} /></button></div>{notices.length === 0 ? <p className="muted">No notifications yet.</p> : notices.map((n) => <button className={n.readAt ? 'notice-row read' : 'notice-row'} key={n.id} onClick={() => markNotificationRead(n.id)}><Bell size={15} /><span><b>{n.title}</b><small>{n.body}</small></span></button>)}</div> }
+function NotificationPanel({ notices, close }: { notices: Notice[]; close: () => void }) {
+  const unread = notices.filter(n => !n.readAt).length
+  const [busy, setBusy] = useState(false)
+  const [pushBusy, setPushBusy] = useState(false)
+  const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(() => typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'unsupported')
+
+  const read = async (id: string) => {
+    setBusy(true)
+    try {
+      await markNotificationRead(id)
+      window.dispatchEvent(new CustomEvent('quantix:notification-read', { detail: { id } }))
+    } catch {} finally { setBusy(false) }
+  }
+
+  const markAll = async () => {
+    if (!unread) return
+    setBusy(true)
+    try {
+      await markAllNotificationsRead()
+      window.dispatchEvent(new CustomEvent('quantix:notifications-read-all'))
+    } catch {} finally { setBusy(false) }
+  }
+
+  const clear = async () => {
+    if (!notices.length || !window.confirm('Clear all notifications from this account?')) return
+    setBusy(true)
+    try {
+      await clearNotifications()
+      window.dispatchEvent(new CustomEvent('quantix:notifications-cleared'))
+    } catch {} finally { setBusy(false) }
+  }
+
+  const enablePhone = async () => {
+    if (!('serviceWorker' in navigator) || !('Notification' in window)) return
+    setPushBusy(true)
+    try {
+      const next = await Notification.requestPermission()
+      setPermission(next)
+      if (next === 'granted') {
+        const registration = await navigator.serviceWorker.register('/sw.js')
+        const subscription = await registration.pushManager.getSubscription()
+        if (subscription) {
+          const json = subscription.toJSON()
+          if (json.endpoint && json.keys?.p256dh && json.keys?.auth) {
+            await saveNotificationSubscription({ endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth })
+          }
+        }
+      }
+    } catch {} finally { setPushBusy(false) }
+  }
+
+  return <div className="notification-panel">
+    <div className="sheet-title">
+      <div><p className="eyebrow">Updates</p><h2>Notifications {unread > 0 && <span className="muted">· {unread} unread</span>}</h2></div>
+      <button className="icon-button" onClick={close}><X size={17} /></button>
+    </div>
+    <div className="notification-tools">
+      {permission !== 'granted' && permission !== 'unsupported' && <button className="text-button" disabled={pushBusy} onClick={enablePhone}>{pushBusy ? 'Enabling…' : 'Enable phone alerts'}</button>}
+      {unread > 0 && <button className="text-button" disabled={busy} onClick={markAll}>Mark all read</button>}
+      {notices.length > 0 && <button className="text-button danger-text" disabled={busy} onClick={clear}>Clear all</button>}
+    </div>
+    {notices.length === 0 ? <p className="muted">No notifications yet.</p> : notices.map((n) => <button className={n.readAt ? 'notice-row read' : 'notice-row'} key={n.id} disabled={busy} onClick={() => void read(n.id)}><Bell size={15} /><span><b>{n.title}</b><small>{n.body}</small></span>{!n.readAt && <i className="unread-indicator" />}</button>)}
+  </div> }
+
 function InvestmentSheet({ plan, close, notify }: { plan: Plan; close: () => void; notify: (s: string) => void }) { const [busy, setBusy] = useState(false); return <div className="sheet-backdrop" onClick={close}><section className="sheet" onClick={(e) => e.stopPropagation()}><div className="sheet-handle" /><div className="sheet-title"><div><p className="eyebrow">Confirm {plan.name}</p><h2>Wallet investment</h2></div><button className="icon-button" onClick={close}><X size={18} /></button></div><p className="sheet-copy">{money(plan.minimumMinor)} will be deducted from your available balance. Your {money(plan.purchaseBonusMinor)} instant bonus is credited separately.</p><div className="plan-calcs"><span><small>Principal</small><b>{money(plan.minimumMinor)}</b></span><span><small>Profit</small><b>{money(plan.totalEarningsMinor - plan.minimumMinor)}</b></span><span><small>Total expected</small><b>{money(plan.totalExpectedPayoutMinor)}</b></span></div><button className="primary-button full" disabled={busy} onClick={async () => { setBusy(true); try { await purchaseInvestment({ planId: plan.id }); notify('Investment purchased successfully. Your balance has been updated.'); close(); window.dispatchEvent(new CustomEvent('quantix:refresh')) } catch (e) { notify(e instanceof Error ? e.message : 'Unable to purchase investment') } finally { setBusy(false) } }}>{busy ? 'Processing...' : 'Confirm investment'} <Check size={16} /></button></section></div> }
