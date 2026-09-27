@@ -1,5 +1,6 @@
 'use server'
 
+import { createHash, randomUUID } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUser } from '@/lib/auth'
@@ -162,9 +163,10 @@ export async function requestWithdrawal(input: { payoutAccountId: string; amount
 function moneyMinor(minor: number) { return `₦${(minor / 100).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }
 
 async function sha256Hex(input: ArrayBuffer | string) {
-  const bytes = typeof input === 'string' ? new TextEncoder().encode(input) : input
-  const digest = await crypto.subtle.digest('SHA-256', bytes)
-  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('')
+  const hash = createHash('sha256')
+  if (typeof input === 'string') hash.update(input)
+  else hash.update(Buffer.from(input))
+  return hash.digest('hex')
 }
 
 function normalizeFingerprintPart(value: string) {
@@ -175,7 +177,7 @@ export async function uploadDepositProof(file: File) {
   const userId = await getUserId()
   if (!file || file.size > 5 * 1024 * 1024 || !['image/jpeg', 'image/png', 'application/pdf'].includes(file.type)) throw new Error('Upload a JPG, PNG, or PDF proof under 5MB')
   const extension = file.name.split('.').pop()?.toLowerCase() || 'bin'
-  const safeName = `${crypto.randomUUID()}.${extension}`
+  const safeName = `${randomUUID()}.${extension}`
   const path = `${userId}/${safeName}`
   const proofHash = await sha256Hex(await file.arrayBuffer())
   const supabase = await createClient()
