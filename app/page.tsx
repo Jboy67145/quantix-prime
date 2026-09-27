@@ -96,7 +96,7 @@ export default function Page() {
             const fresh = next.filter(n => !currentIds.has(n.id))
             if (fresh[0]) {
               setNewNotice(fresh[0])
-              if (notificationPermission === 'granted') {
+              if ('Notification' in window && Notification.permission === 'granted') {
                 void navigator.serviceWorker.ready.then(registration => registration.showNotification(fresh[0].title, {
                   body: fresh[0].body,
                   icon: '/icon-dark-32x32.png',
