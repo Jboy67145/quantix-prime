@@ -119,9 +119,22 @@ export default function Page() {
     const noticeTimer = window.setInterval(refreshNotices, 10000)
     const marqueeTimer = window.setInterval(refreshMarquees, 15000)
 
+    const onNotificationRead = (event: Event) => {
+      const id = (event as CustomEvent<{ id: string }>).detail?.id
+      if (id) setNotices(current => current.map(n => n.id === id ? { ...n, readAt: new Date().toISOString() } : n))
+    }
+    const onNotificationsReadAll = () => setNotices(current => current.map(n => ({ ...n, readAt: n.readAt || new Date().toISOString() })))
+    const onNotificationsCleared = () => { setNotices([]); setNewNotice(null); setNotificationsOpen(false) }
+
     window.addEventListener('quantix:refresh', refreshAccount)
+    window.addEventListener('quantix:notification-read', onNotificationRead)
+    window.addEventListener('quantix:notifications-read-all', onNotificationsReadAll)
+    window.addEventListener('quantix:notifications-cleared', onNotificationsCleared)
     return () => {
       window.removeEventListener('quantix:refresh', refreshAccount)
+      window.removeEventListener('quantix:notification-read', onNotificationRead)
+      window.removeEventListener('quantix:notifications-read-all', onNotificationsReadAll)
+      window.removeEventListener('quantix:notifications-cleared', onNotificationsCleared)
       window.clearInterval(luckyTimer)
       window.clearInterval(noticeTimer)
       window.clearInterval(marqueeTimer)
