@@ -44,9 +44,15 @@ export default function Page() {
   useEffect(() => {
     if (authPending || !session?.user) return
 
-    const requested = new URLSearchParams(window.location.search).get('tab')
+    const params = new URLSearchParams(window.location.search)
+    const requested = params.get('tab')
+    const requestedAction = params.get('action')
     if (['home', 'wallet', 'lucky', 'invest', 'team', 'me'].includes(requested || '')) {
       setTab(requested as Tab)
+    }
+    if (requestedAction === 'deposit') {
+      setTab('wallet')
+      window.setTimeout(() => window.dispatchEvent(new CustomEvent('quantix:open-deposit')), 0)
     }
 
     const refreshAccount = () => {
