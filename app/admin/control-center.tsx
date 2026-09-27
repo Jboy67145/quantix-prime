@@ -84,7 +84,7 @@ export default function ControlCenter(){
 
  const users=useMemo(()=>{const term=q.trim().toLowerCase(); return data?.profiles?.filter((u:any)=>!term||[u.name,u.username,u.email,u.id].some((v:any)=>String(v||'').toLowerCase().includes(term)))||[]},[data,q])
  const walletForUser=selectedUser?data?.wallets?.find((w:any)=>w.user_id===selectedUser.id):null
- const copyValue=async(key:string,value:any)=>{try{await navigator.clipboard.writeText(String(value??''));setCopied(key);window.setTimeout(()=>setCopied(''),1400)}catch{setError('Unable to copy this value. You can select the text manually.')}}
+ const copyValue=async(key:string,value:any,_label?:string)=>{try{await navigator.clipboard.writeText(String(value??''));setCopied(key);window.setTimeout(()=>setCopied(''),1400)}catch{setError('Unable to copy this value. You can select the text manually.')}}
  const withdrawalAccount=(x:any)=>x.payout_account_snapshot||data.payouts?.find((p:any)=>p.id===x.payout_account_id)||{}
 
  function selectUser(u:any){
