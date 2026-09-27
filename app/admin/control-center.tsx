@@ -376,14 +376,19 @@ export default function ControlCenter(){
     {tab==='deposits'&&<Panel title="All deposits">
       {data.deposits.map((x:any)=>{
        const funding=data.accounts.find((a:any)=>a.id===x.payment_account_id)
+       const duplicateTransaction = Boolean(x.transaction_fingerprint) && data.deposits.some((other:any)=>other.id!==x.id && other.user_id!==x.user_id && other.transaction_fingerprint===x.transaction_fingerprint)
        return <Row key={x.id} title={x.status+' · '+naira(x.amount_minor)} meta={x.user_id+' · '+date(x.created_at)}>
         <div className="w-full rounded-2xl border border-white/10 bg-black/30 p-4">
-         <div className="mb-3 text-sm font-semibold">Submitted deposit details</div>
+         <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div className="text-sm font-semibold">Submitted deposit details</div>{duplicateTransaction&&<span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-200">Potential transaction duplicate</span>}</div>
          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div><div className="text-xs opacity-60">Amount</div><div className="mt-1 font-medium">{naira(x.amount_minor)}</div></div>
           <div><div className="text-xs opacity-60">Sender name</div><div className="mt-1 break-words font-medium">{x.sender_name||'—'}</div></div>
-          <div><div className="text-xs opacity-60">Transfer reference</div><div className="mt-1 break-all font-medium">{x.transfer_reference||'—'}</div></div>
+          <div><div className="text-xs opacity-60">Bank transaction reference</div><div className="mt-1 break-all font-medium">{x.transfer_reference||'—'}</div></div>
           <div><div className="text-xs opacity-60">Deposit-to account</div><div className="mt-1 break-words font-medium">{funding?funding.bank_name+' · '+funding.account_name+' · '+funding.account_number:'—'}</div></div>
+         </div>
+         <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-3"><div className="text-xs opacity-60">Quantix Deposit Reference</div><div className="mt-1 break-all font-semibold">{x.deposit_reference||'—'}</div><div className="mt-2">{x.deposit_reference&&<button type="button" className="secondary-button" onClick={()=>copyValue(x.id+':deposit-reference',x.deposit_reference,'Copy deposit reference')}>{copied===x.id+':deposit-reference'?<Check size={15}/>:<Copy size={15}/>}<span>{copied===x.id+':deposit-reference'?'Copied':'Copy reference'}</span></button>}</div></div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-3"><div className="text-xs opacity-60">Proof fingerprint</div><div className="mt-1 break-all font-mono text-[11px]">{x.proof_sha256||'Legacy proof — not fingerprinted'}</div><p className="mt-2 text-xs opacity-50">Exact matches are blocked before a new deposit can be submitted.</p></div>
          </div>
          <div className="mt-3 text-xs opacity-60">Proof file: {x.payment_proof_name||'—'}</div>
         </div>
