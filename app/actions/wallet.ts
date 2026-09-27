@@ -182,7 +182,8 @@ export async function uploadDepositProof(file: File) {
   const path = `${userId}/${safeName}`
   const proofHash = await sha256Hex(await file.arrayBuffer())
   const supabase = await createClient()
-  const { data: existingProof } = await supabase.from('quantix_deposits').select('id,user_id,status').eq('proof_sha256', proofHash).limit(1).maybeSingle()
+  const serviceSupabase = createServiceClient()
+  const { data: existingProof } = await serviceSupabase.from('quantix_deposits').select('id,user_id,status').eq('proof_sha256', proofHash).limit(1).maybeSingle()
   if (existingProof) throw new Error('This payment proof has already been submitted and cannot be reused for another deposit.')
   const { error } = await supabase.storage.from('deposit-proofs').upload(path, file, { contentType: file.type, upsert: false })
   if (error) {
