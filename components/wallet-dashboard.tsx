@@ -25,10 +25,12 @@ export function WalletDashboard({ notify }: { notify: (message: string) => void 
   const [form, setForm] = useState({ amount: '', payoutAccountId: '', paymentAccountId: '', senderName: '', transferReference: '', bankName: '', accountName: '', accountNumber: '' })
   const refresh = () => getWalletDetails().then(setData).catch((error) => notify(error instanceof Error ? error.message : 'Unable to load wallet'))
   useEffect(() => {
+    const openDeposit = () => openMode('deposit')
+    window.addEventListener('quantix:open-deposit', openDeposit)
     refresh()
     getPaymentAccounts().then(setFundingAccounts).catch(() => setDepositError('We could not load deposit accounts. Please try again.'))
     const timer = window.setInterval(refresh, 15000)
-    return () => window.clearInterval(timer)
+    return () => { window.clearInterval(timer); window.removeEventListener('quantix:open-deposit', openDeposit) }
   }, [])
   const available = Number(data.wallet?.available_minor || 0)
   const invested = Number(data.wallet?.invested_minor || 0)
