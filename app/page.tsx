@@ -7,7 +7,7 @@ import { signOut } from '@/lib/auth-client'
 import { getPublicPlans, purchaseInvestment, getUserInvestments } from '@/app/actions/investments'
 import { getWalletSnapshot, getReferralSnapshot, getUserPayoutAccounts, addPayoutAccount, deletePayoutAccount } from '@/app/actions/wallet'
 import { getOpenDraws, joinDraw, claimReward } from '@/app/actions/lucky'
-import { getNotifications, getMarqueeHighlights, markNotificationRead } from '@/app/actions/notifications'
+import { getNotifications, getMarqueeHighlights, markNotificationRead, markAllNotificationsRead, clearNotifications, saveNotificationSubscription } from '@/app/actions/notifications'
 import { WalletDashboard } from '@/components/wallet-dashboard'
 import { AuthForm } from '@/components/auth-form'
 import { useSession } from '@/lib/auth-client'
@@ -34,6 +34,7 @@ export default function Page() {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [marquees, setMarquees] = useState<any[]>([])
   const [newNotice, setNewNotice] = useState<Notice | null>(null)
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default')
   const notificationBootstrapped = useRef(false)
 
   const notify = (text: string) => {
