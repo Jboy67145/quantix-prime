@@ -123,6 +123,17 @@ export async function getAdminCenter(){
     }
   })
 
+  const userById=new Map(enrichedProfiles.map((p:any)=>[p.id,p]))
+  const attachUser=(row:any)=>{ const u=userById.get(row.user_id); return {...row, username:u?.username||'', user_name:u?.name||'', user_email:u?.email||null} }
+  const attachReferral=(row:any)=>{ const referrer=userById.get(row.referrer_user_id); const referred=userById.get(row.referred_user_id); return {...row, referrer_username:referrer?.username||'', referrer_name:referrer?.name||'', referred_username:referred?.username||'', referred_name:referred?.name||''} }
+  const enrichedWallets=walletRows.map(attachUser)
+  const enrichedDeposits=(q[3].data||[]).map(attachUser)
+  const enrichedWithdrawals=(q[4].data||[]).map(attachUser)
+  const enrichedInvestments=investmentRows.map(attachUser)
+  const enrichedReferrals=referralRows.map(attachReferral)
+  const enrichedPayouts=(q[11].data||[]).map(attachUser)
+  const enrichedLedger=(q[12].data||[]).map(attachUser)
+
   return {
     profiles:enrichedProfiles,
     registeredAccountCount:authUsers.length,
@@ -132,10 +143,10 @@ export async function getAdminCenter(){
       return p?.role==='SUPER_ADMIN'||p?.role==='ADMIN'
     }).length,
     profileOnlyCount:profileRows.filter((p:any)=>!authById.has(p.id)).length,
-    wallets:q[0].data||[], plans:q[2].data||[],
-    deposits:q[3].data||[], withdrawals:q[4].data||[], investments:q[5].data||[],
-    referrals:q[6].data||[], draws:q[7].data||[], notifications:q[8].data||[], marqueeItems:q[9].data||[],
-    accounts:q[10].data||[], payouts:q[11].data||[], ledger:q[12].data||[],
+    wallets:enrichedWallets, plans:q[2].data||[],
+    deposits:enrichedDeposits, withdrawals:enrichedWithdrawals, investments:enrichedInvestments,
+    referrals:enrichedReferrals, draws:q[7].data||[], notifications:q[8].data||[], marqueeItems:q[9].data||[],
+    accounts:q[10].data||[], payouts:enrichedPayouts, ledger:enrichedLedger,
     audits:q[13].data||[], settings:q[14].data?.[0]||null, depositSettings:q[15].data?.[0]||null,
   }
 }
@@ -418,6 +429,15 @@ export async function updateDraw(input:z.input<typeof draw>){
   revalidatePath('/')
   revalidatePath('/admin')
   return r.data
+}
+export async function deleteDraw(id:string,reason:string){
+  const a=await ctx(),i=uuid.parse(id),s=await createClient()
+  const d=z.string().trim().min(5).max(1000).parse(reason)
+  const { data, error } = await s.rpc('admin_delete_lucky_draw_atomic',{p_draw_id:i,p_reason:d})
+  if(error || !data) throw new Error(error?.message || 'Lucky Wish deletion failed. No changes were made.')
+  revalidatePath('/')
+  revalidatePath('/admin')
+  return data
 }
 export async function toggleDraw(id:string,open:boolean){
   const a=await ctx(),s=await createClient(),i=uuid.parse(id)
