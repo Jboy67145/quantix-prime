@@ -46,15 +46,57 @@ export async function getInvestedPlanIds() {
 export async function getReferralSnapshot() {
   const userId = await getOptionalUserId()
   if (!userId) return { profile: null, referrals: [], earned: 0, pending: 0, link: '' }
+
   const supabase = await createClient()
+  const service = createServiceClient()
+
   const [{ data: profile }, { data: referrals }] = await Promise.all([
     supabase.from('profiles').select('username, invite_code, referred_by_code').eq('id', userId).maybeSingle(),
     supabase.from('quantix_referrals').select('*').eq('referrer_user_id', userId).order('created_at', { ascending: false }),
   ])
-  const rows = (referrals ?? []).map((row: any) => ({
-    ...row,
-    rewardMinor: Number(row.reward_minor || 0),
-  }))
+
+  const baseRows = referrals ?? []
+  const referredIds = baseRows.map((row: any) => row.referred_user_id).filter(Boolean)
+  if (!referredIds.length) {
+    return {
+      profile, referrals: [], earned: 0, pending: 0,
+      link: profile?.invite_code ? `${getAppUrl()}/sign-up?ref=${encodeURIComponent(profile.invite_code)}` : '',
+    }
+  }
+
+  // These are server-side reads restricted to the IDs already present in this user's referral relationships.
+  // This avoids N+1 requests and keeps the Team page fast.
+  const [{ data: downlines }, { data: deposits }] = await Promise.all([
+    service.from('profiles').select('id,username,full_name').in('id', referredIds),
+    service.from('quantix_deposits').select('id,user_id,amount_minor,status,created_at,reviewed_at').in('user_id', referredIds).order('created_at', { ascending: true }),
+  ])
+
+  const users = new Map((downlines ?? []).map((u: any) => [u.id, u]))
+  const depositsByUser = new Map<string, any[]>()
+  for (const deposit of deposits ?? []) {
+    const list = depositsByUser.get(deposit.user_id) ?? []
+    list.push(deposit)
+    depositsByUser.set(deposit.user_id, list)
+  }
+
+  const rows = baseRows.map((row: any) => {
+    const u = users.get(row.referred_user_id)
+    const userDeposits = depositsByUser.get(row.referred_user_id) ?? []
+    const approvedDeposits = userDeposits.filter((d: any) => d.status === 'APPROVED')
+    const firstApproved = approvedDeposits[0] ?? null
+    return {
+      ...row,
+      rewardMinor: Number(row.reward_minor || 0),
+      referredUsername: u?.username || 'User',
+      referredName: u?.full_name || '',
+      firstDepositCompleted: Boolean(firstApproved),
+      firstApprovedDepositMinor: firstApproved ? Number(firstApproved.amount_minor || 0) : 0,
+      firstApprovedDepositAt: firstApproved?.reviewed_at || firstApproved?.created_at || null,
+      depositCount: userDeposits.length,
+      approvedDepositCount: approvedDeposits.length,
+    }
+  })
+
   return {
     profile,
     referrals: rows,
