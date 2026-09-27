@@ -67,7 +67,7 @@ export async function getReferralSnapshot() {
   // These are server-side reads restricted to the IDs already present in this user's referral relationships.
   // This avoids N+1 requests and keeps the Team page fast.
   const [{ data: downlines }, { data: deposits }] = await Promise.all([
-    service.from('profiles').select('id,username,full_name').in('id', referredIds),
+    service.from('profiles').select('id,username,name').in('id', referredIds),
     service.from('quantix_deposits').select('id,user_id,amount_minor,status,created_at,reviewed_at').in('user_id', referredIds).order('created_at', { ascending: true }),
   ])
 
@@ -88,7 +88,7 @@ export async function getReferralSnapshot() {
       ...row,
       rewardMinor: Number(row.reward_minor || 0),
       referredUsername: u?.username || 'User',
-      referredName: u?.full_name || '',
+      referredName: u?.name || '',
       firstDepositCompleted: Boolean(firstApproved),
       firstApprovedDepositMinor: firstApproved ? Number(firstApproved.amount_minor || 0) : 0,
       firstApprovedDepositAt: firstApproved?.reviewed_at || firstApproved?.created_at || null,
