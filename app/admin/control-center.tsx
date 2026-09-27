@@ -5,7 +5,7 @@ import { ArrowLeft, RefreshCw, Shield, Users, Wallet, TrendingUp, Landmark, Gift
 import { useRouter } from 'next/navigation'
 import {
   getAdminCenter,savePlan,saveMarquee,archiveMarquee,deleteMarquee,archivePlan,setUserState,savePolicy,saveDepositPolicy,sendAdminNotification,
-  createDraw,updateDraw,toggleDraw,updateReferral,archivePayout,restorePayout,
+  createDraw,updateDraw,toggleDraw,deleteDraw,updateReferral,archivePayout,restorePayout,
   updateUserProfile,processInvestmentMaturity,cancelInvestment
 } from '@/app/actions/admin-center'
 import { adjustUserBalance,reviewDeposit } from '@/app/actions/admin'
