@@ -34,7 +34,6 @@ export default function Page() {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [marquees, setMarquees] = useState<any[]>([])
   const [newNotice, setNewNotice] = useState<Notice | null>(null)
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default')
   const notificationBootstrapped = useRef(false)
 
   const notify = (text: string) => {
@@ -69,12 +68,10 @@ export default function Page() {
     const luckyTimer = window.setInterval(refreshLuckyDraws, 30000)
     const setupNotifications = async () => {
       if (!('serviceWorker' in navigator)) {
-        setNotificationPermission('unsupported')
         return
       }
       try {
         const registration = await navigator.serviceWorker.register('/sw.js')
-        if ('Notification' in window) setNotificationPermission(Notification.permission)
         if ('Notification' in window && Notification.permission === 'granted') {
           const existing = await registration.pushManager.getSubscription()
           if (existing) {
