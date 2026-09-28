@@ -16,21 +16,12 @@ export async function GET(request: Request) {
     if (error) throw error
 
     let processed = 0
-    const errors: Array<{ id: string; message: string }> = []
-
     for (const investment of due ?? []) {
       const { data, error: processError } = await supabase.rpc('process_maturity_atomic', { p_investment_id: investment.id })
-      if (processError) {
-        errors.push({ id: investment.id, message: processError.message })
-        continue
-      }
+      if (processError) throw processError
       if (data) processed += 1
     }
-
-    return NextResponse.json(
-      { processed, attempted: due?.length ?? 0, errors },
-      { headers: { 'Cache-Control': 'no-store' } },
-    )
+    return NextResponse.json({ processed })
   } catch (error) {
     console.error('Maturity cron failed', error)
     return NextResponse.json({ error: 'Unable to process maturities' }, { status: 500 })
