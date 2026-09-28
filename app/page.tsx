@@ -60,9 +60,6 @@ export default function Page() {
       getWalletSnapshot().then((v) => setWallet(v)).catch(() => {})
     }
 
-    const refreshListener = () => refreshAccount()
-    window.addEventListener('quantix:refresh', refreshListener)
-
     getPublicPlans().then((v) => setPlans(v as Plan[])).catch(() => {})
     refreshAccount()
     const accountTimer = window.setInterval(refreshAccount, 15000)
@@ -136,6 +133,7 @@ export default function Page() {
       window.removeEventListener('quantix:notification-read', onNotificationRead)
       window.removeEventListener('quantix:notifications-read-all', onNotificationsReadAll)
       window.removeEventListener('quantix:notifications-cleared', onNotificationsCleared)
+      window.clearInterval(accountTimer)
       window.clearInterval(luckyTimer)
       window.clearInterval(noticeTimer)
       window.clearInterval(marqueeTimer)
