@@ -87,9 +87,19 @@ export default function ControlCenter(){
  },[busy])
 
  const act=async(k:string,fn:()=>Promise<any>,message?:string)=>{
-   try{setBusy(k);setError('');setSuccess('');await fn();await load();if(message)setSuccess(message)}
-   catch(e){setError(e instanceof Error?e.message:'Action failed. Nothing was changed.')}
-   finally{setBusy('')}
+   try{
+     setBusy(k);setError('');setSuccess('')
+     const result=await fn()
+     if(result && typeof result==='object' && result.ok===false){
+       throw new Error(String(result.error||'The operation was rejected. No changes were made.'))
+     }
+     await load()
+     if(message)setSuccess(message)
+     return result
+   }catch(e){
+     setError(e instanceof Error?e.message:'Action failed. Nothing was changed.')
+     return null
+   }finally{setBusy('')}
  }
 
  const users=useMemo(()=>{const term=q.trim().toLowerCase(); return data?.profiles?.filter((u:any)=>!term||[u.name,u.username,u.email,u.id].some((v:any)=>String(v||'').toLowerCase().includes(term)))||[]},[data,q])
