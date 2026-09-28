@@ -149,7 +149,7 @@ export default function ControlCenter(){
      <div className="flex items-center gap-3">
       <button type="button" aria-label="Go back" className="icon-button" onClick={()=>router.back()}><ArrowLeft size={17}/></button>
       <a href="/" className="secondary-button whitespace-nowrap">User Home</a>
-      <div className="brand-mark">Q</div><div><strong>quantix</strong><span className="block text-xs tracking-[.25em] opacity-60">PRIME CONTROL CENTER</span></div>
+      <div className="brand-mark logo-brand"><img src="/icon.svg" alt="Quantix Prime" /></div><div><strong>quantix</strong><span className="block text-xs tracking-[.25em] opacity-60">PRIME CONTROL CENTER</span></div>
      </div>
      <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>window.location.reload()} title="Refresh the entire admin system"><RefreshCw size={16}/> Refresh</button>
     </div>
