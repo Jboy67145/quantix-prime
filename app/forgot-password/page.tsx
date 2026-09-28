@@ -23,7 +23,7 @@ export default function ForgotPasswordPage() {
   }
 
   return <main className="auth-shell"><div className="auth-panel">
-    <div className="brand-lockup"><div className="brand-mark">Q</div><div><strong>quantix</strong><span>PRIME</span></div></div>
+    <div className="brand-lockup"><div className="brand-mark logo-brand"><img src="/icon.svg" alt="Quantix Prime" /></div><div><strong>quantix</strong><span>PRIME</span></div></div>
     <p className="eyebrow">Account recovery</p><h1>Forgot your password?</h1>
     <p className="auth-copy">Enter the email connected to your Quantix Prime account and we&apos;ll send a secure link to choose a new password.</p>
     <form className="auth-form" onSubmit={submit}>
