@@ -524,18 +524,23 @@ export async function processInvestmentMaturity(id:string){
 
 
 export async function cancelInvestment(input:{userId:string;investmentId:string;reason:string}){
-  const a=await ctx()
+  await ctx()
   const userId=uuid.parse(input.userId)
   const investmentId=uuid.parse(input.investmentId)
   const reason=z.string().trim().min(5).max(1000).parse(input.reason)
   const s=await createClient()
-  const { data, error } = await s.rpc('admin_cancel_investment_atomic',{
-    p_user_id:userId,
-    p_investment_id:investmentId,
-    p_reason:reason,
-  })
-  if(error || !data) throw new Error(error?.message || 'Investment cancellation failed. No changes were made.')
-  revalidatePath('/admin')
-  revalidatePath('/')
-  return data
+  try {
+    const { data, error } = await s.rpc('admin_cancel_investment_atomic',{
+      p_user_id:userId,
+      p_investment_id:investmentId,
+      p_reason:reason,
+    })
+    if(error) return {ok:false as const,error:error.message || 'The database rejected the investment cancellation.'}
+    if(!data) return {ok:false as const,error:'Investment cancellation returned no result. No changes were made.'}
+    revalidatePath('/admin')
+    revalidatePath('/')
+    return {ok:true as const,data}
+  } catch (e) {
+    return {ok:false as const,error:e instanceof Error ? e.message : 'Investment cancellation failed. No changes were made.'}
+  }
 }
