@@ -43,7 +43,7 @@ export default function ResetPasswordPage() {
   }
 
   return <main className="auth-shell"><div className="auth-panel">
-    <div className="brand-lockup"><div className="brand-mark">Q</div><div><strong>quantix</strong><span>PRIME</span></div></div>
+    <div className="brand-lockup"><div className="brand-mark logo-brand"><img src="/icon.svg" alt="Quantix Prime" /></div><div><strong>quantix</strong><span>PRIME</span></div></div>
     <p className="eyebrow">Secure account recovery</p><h1>{success ? 'Password updated' : 'Choose a new password'}</h1>
     <p className="auth-copy">{success ? 'Your password has been changed securely. You can now sign in with your new password.' : ready ? 'Set a strong new password for your Quantix Prime account.' : 'Verifying your secure reset session…'}</p>
     {ready && error && !success ? <><p className="auth-error" role="alert">{error}</p><Link className="auth-link" href="/forgot-password">Request a new reset link</Link></> : ready && !success ? <form className="auth-form" onSubmit={submit}>
