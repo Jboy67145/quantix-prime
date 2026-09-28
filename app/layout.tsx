@@ -5,7 +5,6 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'Quantix Prime | Build with clarity',
   description: 'A premium Quantix Prime mobile experience for investing, community, and support.',
-  generator: 'v0.app',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: '/icon.svg',
