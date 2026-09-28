@@ -1,13 +1,13 @@
 {
   "name": "Quantix Prime",
-  "short_name": "Quantix",
+  "short_name": "Quantix Prime",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#07151d",
-  "theme_color": "#07151d",
+  "background_color": "#0d4651",
+  "theme_color": "#0d4651",
   "description": "Quantix Prime investment and community dashboard.",
   "icons": [
-    { "src": "/icon-dark-32x32.png", "sizes": "32x32", "type": "image/png" },
-    { "src": "/apple-icon.png", "sizes": "180x180", "type": "image/png" }
+    { "src": "/icon.svg", "sizes": "1024x1024", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
 }
