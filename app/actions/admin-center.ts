@@ -52,6 +52,7 @@ export async function getAdminCenter(){
       s.from('quantix_lucky_draws').select('*').order('created_at',{ascending:false}).limit(2000),
       s.from('quantix_notifications').select('*').order('created_at',{ascending:false}).limit(5000),
       s.from('quantix_marquee_items').select('*').order('created_at',{ascending:false}).limit(200),
+      s.from('quantix_communities').select('*').order('display_order').order('created_at',{ascending:true}),
       s.from('quantix_payment_accounts').select('*').order('display_order'),
       s.from('quantix_payout_accounts').select('*').order('created_at',{ascending:false}).limit(5000),
       s.from('quantix_ledger_entries').select('*').order('created_at',{ascending:false}).limit(5000),
@@ -145,9 +146,9 @@ export async function getAdminCenter(){
     profileOnlyCount:profileRows.filter((p:any)=>!authById.has(p.id)).length,
     wallets:enrichedWallets, plans:q[2].data||[],
     deposits:enrichedDeposits, withdrawals:enrichedWithdrawals, investments:enrichedInvestments,
-    referrals:enrichedReferrals, draws:q[7].data||[], notifications:q[8].data||[], marqueeItems:q[9].data||[],
-    accounts:q[10].data||[], payouts:enrichedPayouts, ledger:enrichedLedger,
-    audits:q[13].data||[], settings:q[14].data?.[0]||null, depositSettings:q[15].data?.[0]||null,
+    referrals:enrichedReferrals, draws:q[7].data||[], notifications:q[8].data||[], marqueeItems:q[9].data||[], communities:q[10].data||[],
+    accounts:q[11].data||[], payouts:enrichedPayouts, ledger:enrichedLedger,
+    audits:q[14].data||[], settings:q[15].data?.[0]||null, depositSettings:q[16].data?.[0]||null,
   }
 }
 
