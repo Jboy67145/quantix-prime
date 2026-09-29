@@ -11,6 +11,7 @@ import {
 import { adjustUserBalance,reviewDeposit } from '@/app/actions/admin'
 import { reviewWithdrawal } from '@/app/actions/control'
 import { setPaymentAccountActive } from '@/app/actions/payment-accounts'
+import { saveCommunity, deleteCommunity } from '@/app/actions/communities'
 
 const naira=(m:number)=>'₦'+(Number(m||0)/100).toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2})
 const date=(v:any)=>v ? new Date(v).toISOString().replace('T',' ').slice(0,16)+' UTC' : '—'
@@ -58,6 +59,7 @@ export default function ControlCenter(){
  const [adminScrolling,setAdminScrolling]=useState(false)
  const [cancelTarget,setCancelTarget]=useState<any>(null)
  const [cancelReason,setCancelReason]=useState('')
+ const [community,setCommunity]=useState<any>({name:'',description:'',joinUrl:'',iconUrl:'',active:true,displayOrder:0})
 
  const load=async()=>{
    try{
@@ -137,7 +139,7 @@ export default function ControlCenter(){
   ['overview','Overview',Shield],['users','Users',Users],['wallet','Wallet',Wallet],
   ['deposits','Deposits',Landmark],['withdrawals','Withdrawals',Wallet],
   ['investments','Investments',TrendingUp],['plans','Plans',TrendingUp],
-  ['referrals','Referrals',Users],['lucky','Lucky Wish',Gift],['notifications','Notifications',Bell],
+  ['referrals','Referrals',Users],['lucky','Lucky Wish',Gift],['communities','Communities',Users],['notifications','Notifications',Bell],
   ['accounts','Bank Accounts',Landmark],['payouts','Payout Accounts',Landmark],
   ['ledger','Ledger',ScrollText],['audit','Audit Logs',ScrollText],['settings','Settings',Settings]
  ]
@@ -403,6 +405,31 @@ export default function ControlCenter(){
        {draw.id&&<button type="button" className="secondary-button" onClick={()=>setDraw({...emptyDraw})}>New draw</button>}
       </div></Panel>
     </div>}
+
+    {tab==='communities'&&<Panel title="Community directory">
+      <div className="grid gap-3 max-w-2xl mb-6">
+        <div className="text-sm opacity-60">Changes here are reflected automatically in the user Community Center.</div>
+        <input className="account-form" placeholder="Community name" value={community.name} onChange={e=>setCommunity({...community,name:e.target.value})}/>
+        <textarea className="account-form min-h-24" placeholder="Short description" value={community.description} onChange={e=>setCommunity({...community,description:e.target.value})}/>
+        <input className="account-form" placeholder="Community join URL (kept behind the Join button)" value={community.joinUrl} onChange={e=>setCommunity({...community,joinUrl:e.target.value})}/>
+        <input className="account-form" placeholder="Optional icon URL" value={community.iconUrl} onChange={e=>setCommunity({...community,iconUrl:e.target.value})}/>
+        <div className="grid grid-cols-2 gap-2">
+          <input className="account-form" type="number" min="0" max="9999" placeholder="Display order" value={community.displayOrder} onChange={e=>setCommunity({...community,displayOrder:Math.max(0,Math.round(Number(e.target.value)||0))})}/>
+          <label className="admin-checkbox"><input type="checkbox" checked={community.active} onChange={e=>setCommunity({...community,active:e.target.checked})}/> Visible to users</label>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>{if(!community.name.trim()||!community.joinUrl.trim())return setError('Community name and join URL are required.');void act('community',()=>saveCommunity(community),community.id?'Community updated.':'Community added.').then(()=>setCommunity({name:'',description:'',joinUrl:'',iconUrl:'',active:true,displayOrder:0}))}}><Save size={15}/>{community.id?'Save changes':'Add community'}</button>
+          {community.id&&<button type="button" className="secondary-button" onClick={()=>setCommunity({name:'',description:'',joinUrl:'',iconUrl:'',active:true,displayOrder:0})}>New community</button>}
+        </div>
+      </div>
+      <div className="grid gap-2">
+        {(data.communities||[]).map((x:any)=><Row key={x.id} title={x.name+' · '+(x.active?'VISIBLE':'HIDDEN')} meta={(x.description||'No description')+' · order '+x.display_order}>
+          <button type="button" className="secondary-button" onClick={()=>setCommunity({id:x.id,name:x.name,description:x.description||'',joinUrl:x.join_url,iconUrl:x.icon_url||'',active:x.active,displayOrder:x.display_order})}><Settings size={15}/>Edit</button>
+          {x.active&&<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>deleteCommunity(x.id),'Community removed from user view.')}>Delete</button>}
+        </Row>)}
+        {!(data.communities||[]).length&&<Empty text="No communities configured yet."/>}
+      </div>
+    </Panel>}
 
     {tab==='notifications'&&<Panel title="Send notifications"><div className="grid gap-2 max-w-xl">
       <select className="account-form" value={msg.userId} onChange={e=>setMsg({...msg,userId:e.target.value})}><option value="">All users</option>{data.profiles.map((u:any)=><option key={u.id} value={u.id}>{u.name||'Unnamed'} · {u.username||u.id}</option>)}</select><select className="account-form" value={msg.type} onChange={e=>setMsg({...msg,type:e.target.value})}><option value="SYSTEM">System update</option><option value="NEWS">News</option><option value="TRENDING">Trending</option><option value="IMPORTANT">Important</option><option value="NEW">New</option><option value="PROMOTION">Promotion</option></select>
