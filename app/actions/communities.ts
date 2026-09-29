@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { requireAdminUser } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 
 const communitySchema = z.object({
   id: z.string().uuid().optional(),
@@ -30,7 +31,7 @@ export async function getCommunities() {
 export async function saveCommunity(input: z.input<typeof communitySchema>) {
   const actor = await requireAdminUser()
   const d = communitySchema.parse(input)
-  const s = createClient()
+  const s = createServiceClient()
   const payload = {
     name: d.name,
     description: d.description || null,
@@ -67,7 +68,7 @@ export async function saveCommunity(input: z.input<typeof communitySchema>) {
 export async function deleteCommunity(id: string) {
   const actor = await requireAdminUser()
   const communityId = z.string().uuid().parse(id)
-  const s = createClient()
+  const s = createServiceClient()
   const before = (await s.from('quantix_communities').select('*').eq('id', communityId).maybeSingle()).data
   if (!before) throw new Error('Community not found.')
   const result = await s.from('quantix_communities').update({
