@@ -9,7 +9,7 @@ const communitySchema = z.object({
   id: z.string().uuid().optional(),
   name: z.string().trim().min(2).max(120),
   description: z.string().trim().max(500).optional().default(''),
-  joinUrl: z.string().trim().url().refine((value) => /^https?:\\/\\//i.test(value), 'Enter a valid community URL.'),
+  joinUrl: z.string().trim().url().refine((value) => /^https?:\/\//i.test(value), 'Enter a valid community URL.'),
   iconUrl: z.string().trim().url().optional().or(z.literal('')).default(''),
   active: z.boolean().default(true),
   displayOrder: z.number().int().min(0).max(9999).default(0),
