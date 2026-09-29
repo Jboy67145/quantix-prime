@@ -28,7 +28,7 @@ export async function getCommunities() {
   return data || []
 }
 
-export async function saveCommunity(input: z.input<typeof communitySchema>) {
+export async function saveCommunity(input: z.infer<typeof communitySchema>) {
   const actor = await requireAdminUser()
   const d = communitySchema.parse(input)
   const s = createServiceClient()
