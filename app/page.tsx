@@ -225,6 +225,7 @@ function Team({ notify, referral }: any) {
 }
 
 function Me({ logout }: any) {
+  const router = useRouter()
   const [accounts, setAccounts] = useState<any[]>([])
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState({ bankName: '', accountName: '', accountNumber: '' })
