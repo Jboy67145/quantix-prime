@@ -17,7 +17,7 @@ const communitySchema = z.object({
 })
 
 export async function getCommunities() {
-  const s = createClient()
+  const s = await createClient()
   const { data, error } = await s
     .from('quantix_communities')
     .select('id,name,description,join_url,icon_url,active,display_order,created_at,updated_at')
