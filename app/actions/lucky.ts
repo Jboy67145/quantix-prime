@@ -19,7 +19,7 @@ export async function getOpenDraws() {
   const now = new Date().toISOString()
   const { data: draws, error } = await supabase
     .from('quantix_lucky_draws')
-    .select('id,title,description,reward_type,reward_minor,alternate_reward,entry_cost_minor,opens_at,closes_at,status')
+    .select('id,title,description,reward_type,reward_minor,alternate_reward,entry_cost_minor,opens_at,closes_at,status,winner_count')
     .eq('status', 'OPEN')
     .lte('opens_at', now)
     .gt('closes_at', now)
@@ -39,6 +39,7 @@ export async function getOpenDraws() {
       opensAt: draw.opens_at,
       closesAt: draw.closes_at,
       status: draw.status,
+      winnerCount: draw.winner_count,
     },
     entryId: entryMap.get(draw.id) ?? null,
   }))
@@ -57,32 +58,19 @@ export async function joinDraw(drawId: string) {
 }
 
 export async function claimReward(drawId: string) {
-  const userId = await sessionUser()
+  await sessionUser()
   const id = z.string().uuid().parse(drawId)
   const supabase = await createClient()
-  const { data: draw } = await supabase.from('quantix_lucky_draws').select('*').eq('id', id).eq('winner_user_id', userId).maybeSingle()
-  if (!draw || draw.claimed_at) throw new Error('Reward is unavailable')
-  if (draw.reward_type === 'CASH' && draw.reward_minor) {
-    await supabase.from('quantix_ledger_entries').upsert({ user_id: userId, reference: `LUCKY-${draw.id}`, type: 'LUCKY_WIN', amount_minor: draw.reward_minor, direction: 'CREDIT', metadata: { drawId: draw.id } }, { onConflict: 'reference', ignoreDuplicates: true })
-  }
-  await supabase.from('quantix_lucky_draws').update({ claimed_at: new Date().toISOString(), status: 'CLAIMED', updated_at: new Date().toISOString() }).eq('id', id)
-  await supabase.from('quantix_notifications').insert({ user_id: userId, type: 'LUCKY_CLAIMED', title: 'Reward claimed', body: draw.reward_type === 'CASH' ? 'Your cash reward was added to your wallet.' : 'Your reward is now with the operations team.' })
+  const { data, error } = await supabase.rpc('claim_lucky_reward_atomic', { p_draw_id: id })
+  if (error || !data) throw new Error(error?.message || 'Unable to claim Lucky Wish reward')
   revalidatePath('/')
-  return true
+  return data
 }
 
 export async function closeDueDraws() {
-  const supabase = await createClient()
-  const { data: due } = await supabase.from('quantix_lucky_draws').select('*').eq('status', 'OPEN').lte('closes_at', new Date().toISOString())
-  for (const draw of due ?? []) {
-    const { data: entries } = await supabase.from('quantix_lucky_entries').select('*').eq('draw_id', draw.id)
-    if (!entries?.length) {
-      await supabase.from('quantix_lucky_draws').update({ status: 'CLOSED', updated_at: new Date().toISOString() }).eq('id', draw.id)
-      continue
-    }
-    const winner = entries[Math.floor(Math.random() * entries.length)]
-    await supabase.from('quantix_lucky_draws').update({ status: 'WON', winner_user_id: winner.user_id, winner_entry_id: winner.id, updated_at: new Date().toISOString() }).eq('id', draw.id).eq('status', 'OPEN')
-    await supabase.from('quantix_notifications').insert({ user_id: winner.user_id, type: 'LUCKY_WIN', title: 'You won Lucky Wish', body: draw.reward_type === 'CASH' ? 'Your cash reward is ready to claim.' : `Your ${draw.alternate_reward || 'reward'} is ready to claim.` })
-  }
-  return due?.length ?? 0
+  const { createServiceClient } = await import('@/lib/supabase/service')
+  const supabase = createServiceClient()
+  const { data, error } = await supabase.rpc('process_lucky_draws_atomic')
+  if (error) throw new Error(error.message)
+  return Number(data || 0)
 }
