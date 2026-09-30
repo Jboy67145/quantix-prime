@@ -14,7 +14,7 @@ import { useSession } from '@/lib/auth-client'
 
 type Tab = 'home' | 'wallet' | 'lucky' | 'invest' | 'team' | 'me'
 type Plan = { id: string; name: string; description: string; category: string; minimumMinor: number; maximumMinor: number; returnMinor: number; durationDays: number; dailyEarningsMinor: number; totalEarningsMinor: number; totalExpectedPayoutMinor: number; purchaseBonusMinor: number; status: string }
-type Draw = { draw: { id: string; title: string; description: string; rewardType: string; rewardMinor?: number | null; alternateReward?: string | null; closesAt: string | Date; winnerCount?: number }; entryId: string | null }
+type Draw = { draw: { id: string; title: string; description: string; rewardType: string; rewardMinor?: number | null; alternateReward?: string | null; closesAt: string | Date; status?: string; winnerCount?: number; winners?: { username: string; name: string; selectedAt: string; claimedAt?: string | null }[] }; entryId: string | null }
 type Notice = { id: string; title: string; body: string; readAt: string | Date | null }
 const money = (minor: number) => `₦${Math.round(minor / 100).toLocaleString('en-NG')}`
 
