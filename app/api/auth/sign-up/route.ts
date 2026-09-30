@@ -93,16 +93,18 @@ export async function POST(request: Request) {
     // Finalize the profile with the requested username/name. If another request
     // won the username race, the unique constraint is handled below and the new
     // auth user is cleaned up rather than leaving a broken partial account.
-    const { error: profileError } = await admin
+    const { data: updatedProfile, error: profileError } = await admin
       .from('profiles')
       .update({ name, username })
       .eq('id', user.id)
+      .select('id')
+      .maybeSingle()
 
-    if (profileError) {
+    if (profileError || !updatedProfile) {
       await admin.auth.admin.deleteUser(user.id, false).catch(() => undefined)
       createdUserId = null
 
-      if (profileError.code === '23505' || profileError.message.toLowerCase().includes('duplicate')) {
+      if (profileError?.code === '23505' || profileError?.message.toLowerCase().includes('duplicate')) {
         return NextResponse.json({ error: usernameTakenMessage(username) }, { status: 409 })
       }
 
