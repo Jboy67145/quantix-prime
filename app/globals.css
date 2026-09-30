@@ -132,7 +132,10 @@ h1, h2, p { margin: 0; } h1 { font-size: 26px; line-height: 1.15; letter-spacing
 
 /* Compact, scrollable downline area. */
 .team-downline-section { min-height: 0; }
-.team-downline-list { max-height: min(52svh, 520px); overflow-y: auto; overflow-x: hidden; padding-right: 2px; overscroll-behavior: contain; scrollbar-width: thin; }
+.team-downline-list { max-height: min(52svh, 520px); overflow-y: auto; overflow-x: hidden; padding-right: 4px; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; scrollbar-width: thin; scrollbar-color: #3c7770 transparent; }
+.team-downline-list::-webkit-scrollbar { width: 6px; }
+.team-downline-list::-webkit-scrollbar-track { background: transparent; }
+.team-downline-list::-webkit-scrollbar-thumb { background: #3c7770; border-radius: 999px; }
 .team-downline-list .plan-card { padding: 12px; border-radius: 14px; }
 .team-downline-list .plan-card strong { margin: 8px 0 6px; font-size: 14px; }
 .team-downline-list .plan-description { margin: 5px 0 9px; font-size: 10px; }
