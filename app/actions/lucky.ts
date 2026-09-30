@@ -30,12 +30,14 @@ export async function getOpenDraws() {
   const winnersByDraw = new Map<string, any[]>()
   if (completedIds.length) {
     const { data: winners } = await service.from('quantix_lucky_winners').select('draw_id,user_id,created_at,claimed_at').in('draw_id', completedIds).order('created_at', { ascending: true })
-    const ids = [...new Set((winners ?? []).map((w:any)=>w.user_id))]
-    const { data: profiles } = ids.length ? await service.from('profiles').select('id,name,username').in('id', ids) : { data: [] as any[] }
-    const byId = new Map((profiles ?? []).map((p:any)=>[p.id,p]))
-    for (const w of winners ?? []) {
+    const winnerRows: any[] = winners ?? []
+    const ids: string[] = [...new Set(winnerRows.map((w:any)=>String(w.user_id)))]
+    const { data: profileRows } = ids.length ? await service.from('profiles').select('id,name,username').in('id', ids) : { data: [] as any[] }
+    const profiles: any[] = profileRows ?? []
+    const byId = new Map<string, any>(profiles.map((p:any)=>[String(p.id),p]))
+    for (const w of winnerRows) {
       const list = winnersByDraw.get(w.draw_id) ?? []
-      const p = byId.get(w.user_id)
+      const p = byId.get(String(w.user_id))
       list.push({ username:p?.username || 'User', name:p?.name || 'Winner', selectedAt:w.created_at, claimedAt:w.claimed_at })
       winnersByDraw.set(w.draw_id,list)
     }
