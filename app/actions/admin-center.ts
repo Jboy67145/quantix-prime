@@ -50,6 +50,8 @@ export async function getAdminCenter(){
       s.from('quantix_investments').select('*').order('started_at',{ascending:false}).limit(5000),
       s.from('quantix_referrals').select('*').order('created_at',{ascending:false}).limit(5000),
       s.from('quantix_lucky_draws').select('*').order('created_at',{ascending:false}).limit(2000),
+      s.from('quantix_lucky_entries').select('draw_id,user_id').limit(10000),
+      s.from('quantix_lucky_winners').select('draw_id,user_id').limit(10000),
       s.from('quantix_notifications').select('*').order('created_at',{ascending:false}).limit(5000),
       s.from('quantix_marquee_items').select('*').order('created_at',{ascending:false}).limit(200),
       s.from('quantix_communities').select('*').order('display_order').order('created_at',{ascending:true}),
@@ -65,6 +67,12 @@ export async function getAdminCenter(){
   const failed=q.find(x=>x.error)
   if(failed?.error) throw new Error(failed.error.message)
 
+  const luckyEntries=q[8].data||[]
+  const luckyWinners=q[9].data||[]
+  const luckyStats=new Map<string,{joined:number,winners:number}>()
+  for(const e of luckyEntries){const d=luckyStats.get(e.draw_id)||{joined:0,winners:0};d.joined+=1;luckyStats.set(e.draw_id,d)}
+  for(const w of luckyWinners){const d=luckyStats.get(w.draw_id)||{joined:0,winners:0};d.winners+=1;luckyStats.set(w.draw_id,d)}
+  const enrichedDraws=(q[7].data||[]).map((d:any)=>{const st=luckyStats.get(d.id)||{joined:0,winners:0};return {...d,joined_count:st.joined,entry_total_minor:st.joined*Number(d.entry_cost_minor||0),selected_winner_count:st.winners}})
   const profileRows=q[0].data||[]
   const profileById=new Map(profileRows.map((p:any)=>[p.id,p]))
   const authById=new Map(authUsers.map((u:any)=>[u.id,u]))
@@ -146,9 +154,9 @@ export async function getAdminCenter(){
     profileOnlyCount:profileRows.filter((p:any)=>!authById.has(p.id)).length,
     wallets:enrichedWallets, plans:q[2].data||[],
     deposits:enrichedDeposits, withdrawals:enrichedWithdrawals, investments:enrichedInvestments,
-    referrals:enrichedReferrals, draws:q[7].data||[], notifications:q[8].data||[], marqueeItems:q[9].data||[], communities:q[10].data||[],
-    accounts:q[11].data||[], payouts:enrichedPayouts, ledger:enrichedLedger,
-    audits:q[14].data||[], settings:q[15].data?.[0]||null, depositSettings:q[16].data?.[0]||null,
+    referrals:enrichedReferrals, draws:enrichedDraws, notifications:q[10].data||[], marqueeItems:q[11].data||[], communities:q[12].data||[],
+    accounts:q[13].data||[], payouts:enrichedPayouts, ledger:enrichedLedger,
+    audits:q[16].data||[], settings:q[17].data?.[0]||null, depositSettings:q[18].data?.[0]||null,
   }
 }
 
