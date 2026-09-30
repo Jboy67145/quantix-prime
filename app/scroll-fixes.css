@@ -1,0 +1,36 @@
+/* Global page scrolling fix.
+ * Keep the application shell naturally sized so every screen can grow with its content.
+ * Modal/list components that explicitly need internal scrolling keep their own overflow rules.
+ */
+.app-frame {
+  height: auto !important;
+  min-height: 100svh;
+  overflow-x: hidden;
+  overflow-y: visible !important;
+}
+
+/* Downline must never be trapped inside a clipped nested scroller.
+ * The page/app shell handles vertical scrolling, so every invited user and every
+ * detail on their card remains reachable all the way to the end.
+ */
+.team-downline-list {
+  max-height: none !important;
+  overflow: visible !important;
+  padding-right: 0;
+  overscroll-behavior: auto;
+  -webkit-overflow-scrolling: auto;
+  touch-action: auto;
+  scrollbar-width: auto;
+}
+
+.team-downline-list::-webkit-scrollbar,
+.team-downline-list::-webkit-scrollbar-track,
+.team-downline-list::-webkit-scrollbar-thumb {
+  width: auto;
+  background: transparent;
+}
+
+/* Prevent accidental clipping on the primary page content wrapper. */
+.screen-content {
+  overflow: visible;
+}
