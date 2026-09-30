@@ -396,6 +396,7 @@ const draw=z.object({
   entryCostMinor:z.number().int().nonnegative(),
   opensAt:z.string().min(1),
   closesAt:z.string().min(1),
+  winnerCount:z.number().int().min(1).max(1000),
 })
 export async function createDraw(input:z.input<typeof draw>){
   const a=await ctx(),d=draw.omit({id:true}).parse(input),s=await createClient()
@@ -444,7 +445,11 @@ export async function toggleDraw(id:string,open:boolean){
   const a=await ctx(),s=await createClient(),i=uuid.parse(id)
   const before=(await s.from('quantix_lucky_draws').select('*').eq('id',i).maybeSingle()).data
   if(!before) throw new Error('Lucky Wish draw not found.')
-  const r=await s.from('quantix_lucky_draws').update({status:open?'OPEN':'CLOSED',updated_at:new Date().toISOString()}).eq('id',i).select().single()
+  if(open && !['CLOSED','OPEN'].includes(before.status)) throw new Error('This draw has already been finalized and cannot be reopened.')
+  if(open && new Date(before.closes_at) <= new Date()) throw new Error('This draw has already passed its closing time. Create a new draw instead.')
+  const updatePayload:any={status:open?'OPEN':'CLOSED',updated_at:new Date().toISOString()}
+  if(open && new Date(before.opens_at) > new Date()) updatePayload.opens_at=new Date().toISOString()
+  const r=await s.from('quantix_lucky_draws').update(updatePayload).eq('id',i).select().single()
   if(r.error) throw new Error(r.error.message)
   await log(a,'LUCKY_DRAW_STATUS_CHANGED','LUCKY_DRAW',i,before,r.data)
   revalidatePath('/')
