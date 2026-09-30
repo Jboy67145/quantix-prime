@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUser } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
-import { createServiceClient } from '@/lib/supabase/service'
 
 async function sessionUser() {
   const user = await getCurrentUser()
@@ -17,28 +16,13 @@ export async function getOpenDraws() {
   if (!user) return []
   const userId = user.id
   const supabase = await createClient()
-  const service = createServiceClient()
-  const now = new Date().toISOString()
-  const { data: draws, error } = await supabase.from('quantix_lucky_draws')
-    .select('id,title,description,reward_type,reward_minor,alternate_reward,entry_cost_minor,opens_at,closes_at,status,winner_count')
-    .or('and(status.eq.OPEN,opens_at.lte.' + now + ',closes_at.gt.' + now + '),status.eq.WON,status.eq.CLAIMED')
-    .order('closes_at', { ascending: true }).limit(50)
-  if (error) throw new Error('Unable to load Lucky Wish draws')
-  const { data: entries } = await supabase.from('quantix_lucky_entries').select('id, draw_id').eq('user_id', userId)
-  const entryMap = new Map((entries ?? []).map((entry) => [entry.draw_id, entry.id]))
-  const completedIds = (draws ?? []).filter((d:any)=>d.status === 'WON' || d.status === 'CLAIMED').map((d:any)=>d.id)
   const winnersByDraw = new Map<string, any[]>()
   if (completedIds.length) {
-    const { data: winners } = await service.from('quantix_lucky_winners').select('draw_id,user_id,created_at,claimed_at').in('draw_id', completedIds).order('created_at', { ascending: true })
-    const winnerRows: any[] = winners ?? []
-    const ids: string[] = [...new Set(winnerRows.map((w:any)=>String(w.user_id)))]
-    const { data: profileRows } = ids.length ? await service.from('profiles').select('id,name,username').in('id', ids) : { data: [] as any[] }
-    const profiles: any[] = profileRows ?? []
-    const byId = new Map<string, any>(profiles.map((p:any)=>[String(p.id),p]))
-    for (const w of winnerRows) {
+    const { data: winners, error: winnersError } = await supabase.rpc('get_lucky_winners_public', { p_draw_ids: completedIds })
+    if (winnersError) throw new Error('Unable to load Lucky Wish winners')
+    for (const w of winners ?? []) {
       const list = winnersByDraw.get(w.draw_id) ?? []
-      const p = byId.get(String(w.user_id))
-      list.push({ username:p?.username || 'User', name:p?.name || 'Winner', selectedAt:w.created_at, claimedAt:w.claimed_at })
+      list.push({ username:w.username || 'User', name:w.name || 'Winner', selectedAt:w.selected_at, claimedAt:w.claimed_at })
       winnersByDraw.set(w.draw_id,list)
     }
   }
