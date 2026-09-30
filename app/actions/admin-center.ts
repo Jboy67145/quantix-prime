@@ -140,8 +140,8 @@ export async function getAdminCenter(){
   const enrichedWithdrawals=(q[4].data||[]).map(attachUser)
   const enrichedInvestments=investmentRows.map(attachUser)
   const enrichedReferrals=referralRows.map(attachReferral)
-  const enrichedPayouts=(q[11].data||[]).map(attachUser)
-  const enrichedLedger=(q[12].data||[]).map(attachUser)
+  const enrichedPayouts=(q[14].data||[]).map(attachUser)
+  const enrichedLedger=(q[15].data||[]).map(attachUser)
 
   return {
     profiles:enrichedProfiles,
