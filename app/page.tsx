@@ -24,6 +24,7 @@ export default function Page() {
   const { data: session, isPending: authPending } = useSession()
   const [tab, setTab] = useState<Tab>('home')
   const [dark, setDark] = useState(true)
+  const [loadingMessage, setLoadingMessage] = useState('Checking your secure session…')
   const [plans, setPlans] = useState<Plan[]>([])
   const [investments, setInvestments] = useState<any[]>([])
   const [wallet, setWallet] = useState<any>(null)
@@ -37,6 +38,26 @@ export default function Page() {
   const [marquees, setMarquees] = useState<any[]>([])
   const [newNotice, setNewNotice] = useState<Notice | null>(null)
   const notificationBootstrapped = useRef(false)
+
+  useEffect(() => {
+    if (!authPending) return
+    const messages = [
+      'Checking your secure session…',
+      'Syncing your Quantix profile…',
+      'Fetching your latest account data…',
+      'Loading your dashboard…',
+      'Almost there — getting things lined up…',
+      'Still loading — giving the system a moment…',
+      'Finishing the last few bits. You’re nearly in…',
+    ]
+    let index = 0
+    setLoadingMessage(messages[0])
+    const timer = window.setInterval(() => {
+      index = (index + 1) % messages.length
+      setLoadingMessage(messages[index])
+    }, 1800)
+    return () => window.clearInterval(timer)
+  }, [authPending])
 
   const notify = (text: string) => {
     setToast(text)
@@ -145,9 +166,8 @@ export default function Page() {
   if (authPending) {
     return <main className="quantix-shell dark"><div className="app-frame"><div className="qp-loading-screen" role="status" aria-live="polite">
       <div className="qp-loading-card">
-        <Image src="/icon.svg" alt="Quantix Prime" width={72} height={72} priority className="qp-loading-logo" />
-        <div className="qp-loading-indicator" aria-hidden="true"><span /><span /><span /></div>
-        <p>Checking your secure session…</p>
+        <div className="qp-loading-logo-wrap"><Image src="/icon.svg" alt="Quantix Prime" width={72} height={72} priority className="qp-loading-logo" /></div>
+        <p className="qp-loading-status">{loadingMessage}</p>
       </div>
     </div></div></main>
   }
