@@ -147,3 +147,17 @@ The web implementation translates Apple's current interaction principles into Re
   - Deployed CSS was checked and contains the investment sheet, scroll container, persistent action footer, and generic sheet overflow guard.
   - Runtime error scan showed only the pre-existing insufficient-balance validation cluster, last seen on the older navigation deployment; no new clipping/build error was observed.
 - This remediation is now locked unless a later project directive explicitly supersedes it.
+
+
+## Locked follow-up — Investment confirmation action and navigation
+- Investment confirmation now hides the floating bottom navigation for the entire confirmation/purchase step.
+- The **Confirm investment** button is intentionally compact and centered:
+  - max width 320px on normal phones
+  - max width 285px on very narrow phones
+  - 44–46px minimum height
+  - centered within the confirmation action area
+- The button therefore cannot be covered by the bottom navigation.
+- After a successful investment purchase, the confirmation sheet closes and the user is immediately switched to the **Wallet** tab.
+- The purchase operation itself remains unchanged; only post-success navigation behavior was added.
+- A build regression caused by referencing parent `setTab` directly from the standalone `InvestmentSheet` component was detected during Vercel deployment and corrected by passing an explicit `onPurchased` callback.
+- Final verified production build before this checkpoint was READY on Vercel; this checkpoint commit will be the final locked release trigger.
