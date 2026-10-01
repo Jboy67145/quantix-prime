@@ -54,7 +54,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 @media (min-width:1280px){.bottom-nav{width:240px;left:max(20px,calc(50% - 600px))}.topbar,.screen-content{margin-left:280px;width:min(calc(100% - 320px),860px)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}
 
-
 /* Focus surfaces: restrained ambient color movement in the content layer. */
 .qp-glow-surface {
   position: relative;
@@ -158,30 +157,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 .quantix-shell.light input::placeholder,.quantix-shell.light textarea::placeholder{color:#718985;opacity:1}
 .quantix-shell.light .plan-card{color:#102D34;background:#FFF;border-color:#C9DED9}
 .quantix-shell.light .plan-card.emerald{background:#E8F8F2;border-color:#A8D9C9}
-NaN
-NaN
-NaN
-NaN
-NaN
-NaN
-NaN
-NaN
-NaN
 
 /* Premium full-screen loading */
-NaN
-NaN
-NaN
-NaN
-NaN
-NaN
-NaN
-NaN
-NaN
-NaN
-NaN
-NaN
-NaN
-NaN
-NaN
-NaN
+
