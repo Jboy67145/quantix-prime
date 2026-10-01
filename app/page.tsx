@@ -181,7 +181,7 @@ export default function Page() {
     try { await signOut() } finally { router.replace('/sign-in'); router.refresh() }
   }
 
-  return <main className={dark ? 'quantix-shell dark' : 'quantix-shell light'}><div className="app-frame"><header className="topbar"><div className="brand-lockup"><div className="brand-mark"><Zap size={17} /></div><div><strong>quantix</strong><span>PRIME</span></div></div><div className="top-actions"><button className="icon-button" aria-label="Refresh page" title="Refresh entire system" onClick={() => window.location.reload()}><RefreshCw size={18} /></button><button className="icon-button notification-dot" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Bell size={18} />{notices.some((n) => !n.readAt) && <i />}</button><button className="icon-button" aria-label="Toggle theme" onClick={() => setDark(!dark)}>{dark ? <Sun size={18} /> : <Moon size={18} />}</button></div></header>{notificationsOpen && <NotificationPanel notices={notices} close={() => setNotificationsOpen(false)} />}{tab === 'home' && <Home setTab={setTab} notices={notices} marquees={marquees} wallet={wallet} profile={referral?.profile} />}{tab === 'wallet' && <WalletDashboard notify={notify} onSheetChange={setWalletSheetOpen} />}{tab === 'lucky' && <Lucky draws={draws} refresh={() => getOpenDraws().then((v) => setDraws(v as Draw[]))} notify={notify} />}{tab === 'invest' && <Invest plans={plans} investments={investments} open={(p) => setSelected(p)} />}{tab === 'team' && <Team notify={notify} referral={referral} />}{tab === 'me' && <Me logout={logout} />}{selected && <InvestmentSheet plan={selected} close={() => setSelected(null)} notify={notify} />}{toast && <div className="toast" role="status">{toast}</div>}{newNotice && <NotificationPopup notice={newNotice} onReadMore={async () => {
+  return <main className={dark ? 'quantix-shell dark' : 'quantix-shell light'}><div className="app-frame"><header className="topbar"><div className="brand-lockup"><div className="brand-mark"><Zap size={17} /></div><div><strong>quantix</strong><span>PRIME</span></div></div><div className="top-actions"><button className="icon-button" aria-label="Refresh page" title="Refresh entire system" onClick={() => window.location.reload()}><RefreshCw size={18} /></button><button className="icon-button notification-dot" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Bell size={18} />{notices.some((n) => !n.readAt) && <i />}</button><button className="icon-button" aria-label="Toggle theme" onClick={() => setDark(!dark)}>{dark ? <Sun size={18} /> : <Moon size={18} />}</button></div></header>{notificationsOpen && <NotificationPanel notices={notices} close={() => setNotificationsOpen(false)} />}{tab === 'home' && <Home setTab={setTab} notices={notices} marquees={marquees} wallet={wallet} profile={referral?.profile} />}{tab === 'wallet' && <WalletDashboard notify={notify} onSheetChange={setWalletSheetOpen} />}{tab === 'lucky' && <Lucky draws={draws} refresh={() => getOpenDraws().then((v) => setDraws(v as Draw[]))} notify={notify} />}{tab === 'invest' && <Invest plans={plans} investments={investments} open={(p) => setSelected(p)} />}{tab === 'team' && <Team notify={notify} referral={referral} />}{tab === 'me' && <Me logout={logout} />}{selected && <InvestmentSheet plan={selected} close={() => setSelected(null)} notify={notify} onPurchased={() => setTab('wallet')} />}{toast && <div className="toast" role="status">{toast}</div>}{newNotice && <NotificationPopup notice={newNotice} onReadMore={async () => {
   const id = newNotice.id
   try { await markNotificationRead(id) } catch {}
   setNotices(current => current.map(n => n.id === id ? { ...n, readAt: new Date().toISOString() } : n))
@@ -349,7 +349,7 @@ function NotificationPanel({ notices, close }: { notices: Notice[]; close: () =>
     {notices.length === 0 ? <p className="muted">No notifications yet.</p> : notices.map((n) => <button className={n.readAt ? 'notice-row read' : 'notice-row'} key={n.id} disabled={busy} onClick={() => void read(n.id)}><Bell size={15} /><span><b>{n.title}</b><small>{n.body}</small></span>{!n.readAt && <i className="unread-indicator" />}</button>)}
   </div> }
 
-function InvestmentSheet({ plan, close, notify }: { plan: Plan; close: () => void; notify: (s: string) => void }) {
+function InvestmentSheet({ plan, close, notify, onPurchased }: { plan: Plan; close: () => void; notify: (s: string) => void; onPurchased: () => void }) {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -364,7 +364,7 @@ function InvestmentSheet({ plan, close, notify }: { plan: Plan; close: () => voi
       await purchaseInvestment({ planId: plan.id })
       notify('Investment purchased successfully. Your balance has been updated.')
       close()
-      setTab('wallet')
+      onPurchased()
       window.dispatchEvent(new CustomEvent('quantix:refresh'))
     } catch (e) {
       notify(e instanceof Error ? e.message : 'Unable to purchase investment')
