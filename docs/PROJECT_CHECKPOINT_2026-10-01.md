@@ -70,3 +70,33 @@ The web implementation translates Apple's current interaction principles into Re
 4. Apply the reusable sheet behavior to other applicable modal/sheet surfaces without touching financial logic.
 5. Commit to GitHub main and deploy through Vercel integration.
 6. Re-verify production and update this checkpoint with the final deployment/commit and remaining known issues.
+
+
+## Remediation completed in this checkpoint
+- Wallet transaction sheet rebuilt as an adaptive medium/large sheet equivalent:
+  - starts at 50svh
+  - drag indicator supports upward expansion to 100svh
+  - scrolling while at the medium detent expands the sheet first; content scroll begins after full expansion
+  - expanded sheet content has its own vertical scroll area
+  - top corners are 20px
+  - bottom edge is flush to the viewport
+  - safe-area bottom padding keeps final controls accessible
+  - sheet/backdrop z-index is above the floating navigation
+  - body scrolling is locked while the sheet is open
+  - reduced-motion behavior is respected
+  - applies to deposit, withdrawal, and add payout account because all three share WalletDashboard's transaction sheet
+- Added a production-safe loading composition using the real Quantix Prime icon asset and a separate loading indicator/text stack so elements do not overlap.
+- Added restrained animated focus glow for selected focal surfaces using Quantix Prime's primary/secondary palette; reduced-motion disables the animation.
+- Financial RPCs/accounting logic were not changed by the sheet/design remediation.
+- A temporary attempt to change investment validation error transport was reverted after its later page commit produced a Vercel build failure. The stable investment flow is restored.
+- Current remaining runtime cluster is historical/expected insufficient-balance validation:
+  first seen 2026-09-25, last seen 2026-10-01 06:05:42, last deployment dpl_27QkC2yoqLyr89tfbucKq2j2T5b1.
+  It is not a new error from the current production deployment.
+
+## Current production
+- READY deployment: dpl_5Fe9r9DUxN3papxwTCSHALvVX3cX
+- Commit: d25ca2edb89d5c815fa583818147fc962297bbd7
+- Commit message: Restore stable investment purchase flow
+- Production alias: quantixprime.online
+- Source: GitHub main
+- Vercel alias error: null
