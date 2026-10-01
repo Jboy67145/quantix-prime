@@ -187,7 +187,7 @@ export default function Page() {
   setNotices(current => current.map(n => n.id === id ? { ...n, readAt: new Date().toISOString() } : n))
   setNewNotice(null)
   setNotificationsOpen(true)
-}} />}<FloatingNavigation hidden={walletSheetOpen} activeId={tab} onChange={(id) => setTab(id as Tab)} items={[
+}} />}<FloatingNavigation hidden={walletSheetOpen || Boolean(selected)} activeId={tab} onChange={(id) => setTab(id as Tab)} items={[
   { id: 'home', label: 'Home', icon: HomeIcon },
   { id: 'wallet', label: 'Wallet', icon: Wallet },
   { id: 'lucky', label: 'Lucky Wish', icon: Gift },
@@ -364,6 +364,7 @@ function InvestmentSheet({ plan, close, notify }: { plan: Plan; close: () => voi
       await purchaseInvestment({ planId: plan.id })
       notify('Investment purchased successfully. Your balance has been updated.')
       close()
+      setTab('wallet')
       window.dispatchEvent(new CustomEvent('quantix:refresh'))
     } catch (e) {
       notify(e instanceof Error ? e.message : 'Unable to purchase investment')
