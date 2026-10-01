@@ -93,6 +93,7 @@ export function FloatingNavigation({
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([])
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
   const gestureActive = useRef(false)
+  const suppressClick = useRef(false)
   const lastGestureIndex = useRef(activeIndex)
   const activeProgress = useSpringValue(activeIndex, reducedMotion)
 
@@ -151,6 +152,7 @@ export function FloatingNavigation({
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>, id: string) => {
     pointerStart.current = { x: event.clientX, y: event.clientY }
     gestureActive.current = false
+    suppressClick.current = false
     setPressedId(id)
     event.currentTarget.setPointerCapture?.(event.pointerId)
   }
@@ -164,6 +166,7 @@ export function FloatingNavigation({
     if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return
 
     gestureActive.current = true
+    suppressClick.current = true
     selectNearest(event.clientX)
   }
 
@@ -245,7 +248,11 @@ export function FloatingNavigation({
                 if (event.pointerType === 'mouse') clearPointer(event)
               }}
               onClick={() => {
-                if (!gestureActive.current) select(item)
+                if (suppressClick.current) {
+                  suppressClick.current = false
+                  return
+                }
+                select(item)
               }}
               onKeyDown={event => handleKeyDown(event, index)}
             >
