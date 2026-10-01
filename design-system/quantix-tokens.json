@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/design-tokens.json",
+  "name": "Quantix Prime",
+  "version": "1.0.0",
+  "colors": {
+    "dark": {"ink950":"#07151D","ink900":"#0A2029","teal900":"#0D3038","teal850":"#102832","teal800":"#12323A","teal700":"#153C42","border":"#21414A","borderStrong":"#29525A","mint500":"#54DBC2","mint400":"#69E2C5","cyan400":"#7AE8D5","gold500":"#F4C86C","coral400":"#EE9893","blue400":"#76B7FF","white":"#F3FFFB","text2":"#C0D9D5","text3":"#91ADA8","text4":"#789694"},
+    "light": {"background":"#EEF4F3","surface":"#FFFFFF","surface2":"#F4F9F7","border":"#D5E5E1","borderStrong":"#B9D9D1","text":"#102D34","text2":"#5D7E79","text3":"#78918E","accent":"#087D73"}
+  },
+  "gradients": {"prime":["#54DBC2","#0D3038"],"deepPrime":["#123C42","#07151D"],"reward":["#F4C86C","#8A6938"],"mintGlow":["#7AE8D5","#54DBC2"]},
+  "spacing":[2,4,6,8,10,12,16,20,24,28,32,40,48,56,64,80,96],
+  "radii":[6,8,10,12,14,16,18,22,28,32,9999],
+  "elevation":{"e0":"none","e1":"0 1px 2px rgba(0,0,0,.12)","e2":"0 6px 18px rgba(0,0,0,.18)","e3":"0 12px 30px rgba(0,0,0,.24)","e4":"0 20px 50px rgba(0,0,0,.32)","e5":"0 30px 80px rgba(0,0,0,.38)","glowMint":"0 0 0 1px rgba(84,219,194,.18), 0 10px 30px rgba(84,219,194,.16)","focus":"0 0 0 3px rgba(84,219,194,.22)"},
+  "glass":{"dark":{"background":"rgba(16,40,48,.72)","backdropFilter":"blur(24px) saturate(1.2)","border":"1px solid rgba(125,232,213,.14)"},"light":{"background":"rgba(255,255,255,.76)","backdropFilter":"blur(24px) saturate(1.15)","border":"1px solid rgba(8,125,115,.12)"},"clear":{"background":"rgba(255,255,255,.12)","backdropFilter":"blur(18px) saturate(1.3)"}},
+  "motion":{"microMs":140,"standardMs":220,"navigationMs":380,"sheetMs":440,"ambientMs":11000,"easingStandard":"cubic-bezier(.2,.8,.2,1)","easingEnter":"cubic-bezier(0,0,.2,1)","easingExit":"cubic-bezier(.4,0,1,1)","springs":{"snappy":{"stiffness":520,"damping":34,"mass":0.8},"standard":{"stiffness":360,"damping":30,"mass":0.9},"soft":{"stiffness":220,"damping":28,"mass":1},"sheet":{"stiffness":300,"damping":32,"mass":1}}},
+  "breakpoints":{"compact":"0px","regular":"480px","medium":"768px","expanded":"1024px","wide":"1280px"}
+}
