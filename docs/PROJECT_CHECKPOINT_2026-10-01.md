@@ -122,3 +122,28 @@ The web implementation translates Apple's current interaction principles into Re
 - Production target: Vercel production
 - Deployment response: HTTP 200
 - Production source remains GitHub `main`.
+
+
+## Locked remediation — Investment confirmation + viewport-safe sheets
+- Fixed the user investment confirmation flow in `app/page.tsx`.
+- The Wallet investment confirmation now uses a dedicated responsive sheet with:
+  - viewport-safe fixed positioning
+  - independently scrollable confirmation/details content
+  - a persistent bottom action area
+  - always-visible **Confirm investment** control
+  - safe-area padding for compact phones
+  - body-scroll locking while confirmation is open
+  - accessible dialog semantics and close control
+- Added a clear confirmation summary for duration, purchase bonus, and post-confirmation behavior.
+- Added universal non-transaction sheet overflow protection so oversized admin/other sheets scroll instead of clipping their final controls.
+- Added extra mobile page-bottom spacing so the floating navigation does not cover the final content/control on long screens.
+- Existing Wallet deposit/withdrawal/payout-account transaction sheet behavior remains intact.
+- No financial RPCs, wallet accounting, investment purchase logic, maturity logic, referral accounting, or database schemas were changed.
+- Production verification:
+  - Vercel production deployment for commit `b1726993a8e2f6a0d432cea4e1f75fe412088697` reached READY.
+  - Deployment: `dpl_4o7yrpYntSXmF4ZZqKdRMqPfhxsN`
+  - Production aliases: `quantixprime.online`, `quantix-prime-mondayjoshua329-8939s-projects.vercel.app`
+  - Production HTTP response: 200.
+  - Deployed CSS was checked and contains the investment sheet, scroll container, persistent action footer, and generic sheet overflow guard.
+  - Runtime error scan showed only the pre-existing insufficient-balance validation cluster, last seen on the older navigation deployment; no new clipping/build error was observed.
+- This remediation is now locked unless a later project directive explicitly supersedes it.
