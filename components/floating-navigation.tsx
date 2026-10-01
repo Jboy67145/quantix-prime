@@ -5,7 +5,8 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, LucideIcon } from 'lucide-react'
+import type { CSSProperties } from 'react'
+import type { LucideIcon } from 'lucide-react'
 
 export type FloatingNavItem = {
   id: string
