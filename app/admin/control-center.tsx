@@ -60,6 +60,7 @@ export default function ControlCenter(){
  const [cancelTarget,setCancelTarget]=useState<any>(null)
  const [cancelReason,setCancelReason]=useState('')
  const [community,setCommunity]=useState<any>({name:'',description:'',joinUrl:'',iconUrl:'',active:true,displayOrder:0})
+ const [loadingMessage,setLoadingMessage]=useState('Loading Control Center…')
 
  const load=async()=>{
    try{
@@ -80,6 +81,13 @@ export default function ControlCenter(){
    }catch(e){setError(e instanceof Error?e.message:'Unable to load control center.')}
  }
  useEffect(()=>{void load()},[])
+ useEffect(()=>{
+   if(data) return
+   const messages=['Loading Control Center…','Syncing live account data…','Fetching the latest operations…','Preparing your admin workspace…','Almost there — tightening the last connections…','Still loading — one more sync…']
+   let i=0
+   const timer=window.setInterval(()=>{i=(i+1)%messages.length;setLoadingMessage(messages[i])},1800)
+   return()=>window.clearInterval(timer)
+ },[data])
 
  useEffect(()=>{ const onScroll=()=>{setAdminScrolling(true);window.clearTimeout((window as any).__qxScroll);(window as any).__qxScroll=window.setTimeout(()=>setAdminScrolling(false),420)};window.addEventListener('scroll',onScroll,{passive:true});return()=>window.removeEventListener('scroll',onScroll)},[])
 
@@ -133,7 +141,7 @@ export default function ControlCenter(){
    setSelectedUser(u); setProfile({name:u.name||'',username:u.username||''}); setTab('wallet'); setError(''); setSuccess(''); setManageOpen(true)
  }
 
- if(!data)return <main className="admin-shell"><div className="admin-frame"><div className="admin-shimmer"><div className="shimmer-block shimmer-title"/><div className="shimmer-grid">{Array.from({length:5}).map((_,i)=><div className="shimmer-block shimmer-stat" key={i}/>)}</div><div className="shimmer-block shimmer-panel"/><div className="shimmer-block shimmer-panel"/></div></div></main>
+ if(!data)return <main className="admin-shell"><div className="admin-frame"><div className="admin-shimmer" role="status" aria-live="polite"><div className="shimmer-block shimmer-title"/><div className="shimmer-grid">{Array.from({length:5}).map((_,i)=><div className="shimmer-block shimmer-stat" key={i}/>)}</div><div className="shimmer-block shimmer-panel"/><div className="shimmer-block shimmer-panel"/><p className="qp-loading-status">{loadingMessage}</p></div></div></main>
 
  const tabs:any[]=[
   ['overview','Overview',Shield],['users','Users',Users],['wallet','Wallet',Wallet],
