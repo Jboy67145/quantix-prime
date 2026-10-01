@@ -38,11 +38,17 @@
 
 /* Transaction sheets: iOS-style medium -> large detents with isolated scrolling. */
 .sheet-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw;
+  height: 100svh;
   z-index: 100 !important;
   align-items: flex-end;
   overflow: hidden;
   overscroll-behavior: none;
   padding: 0;
+  display: flex !important;
+  justify-content: center;
 }
 .qp-transaction-sheet {
   position: fixed !important;
@@ -65,6 +71,9 @@
   -webkit-backdrop-filter: blur(28px) saturate(1.25);
   backdrop-filter: blur(28px) saturate(1.25);
   box-shadow: 0 -24px 70px rgba(0,0,0,.34), 0 -2px 16px rgba(84,219,194,.08);
+  box-sizing: border-box;
+  pointer-events: auto;
+  overscroll-behavior: contain;
   transition: height 440ms cubic-bezier(.2,.8,.2,1), border-radius 440ms cubic-bezier(.2,.8,.2,1), background-color 440ms cubic-bezier(.2,.8,.2,1), box-shadow 440ms cubic-bezier(.2,.8,.2,1);
   will-change: transform, height;
   contain: layout paint;
@@ -144,4 +153,24 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .qp-transaction-sheet { transition: none !important; }
+}
+
+
+/* The primary navigation must never sit above a modal transaction sheet. */
+.bottom-nav.is-sheet-hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(18px);
+  transition: opacity 220ms cubic-bezier(.2,.8,.2,1), transform 220ms cubic-bezier(.2,.8,.2,1);
+}
+@media (min-width: 1024px) {
+  .bottom-nav.is-sheet-hidden {
+    transform: translateX(-18px);
+  }
+}
+.qp-transaction-sheet .sheet-scroll {
+  scroll-padding-bottom: calc(40px + env(safe-area-inset-bottom));
+}
+.qp-transaction-sheet .sheet-scroll > *:last-child {
+  margin-bottom: 4px;
 }
