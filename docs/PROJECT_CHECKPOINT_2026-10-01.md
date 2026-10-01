@@ -100,3 +100,25 @@ The web implementation translates Apple's current interaction principles into Re
 - Production alias: quantixprime.online
 - Source: GitHub main
 - Vercel alias error: null
+
+
+## Locked implementation — Adaptive Floating Navigation
+- Implemented as the reusable `components/floating-navigation.tsx` component and integrated with the existing six Quantix destinations: Home, Wallet, Lucky Wish, Invest, Team, Me.
+- Reference semantics were not copied; only the floating/adaptive interaction principles were used.
+- Active destination expands into a product-owned capsule with coordinated icon/label transformation.
+- Inactive destinations remain icon-first and visually quiet.
+- Added interruptible spring interpolation, touch-down feedback, swipe-across navigation, keyboard arrow/Home/End navigation, selected-state semantics, disabled-state handling, and reduced-motion support.
+- Added safe-area-aware floating placement and responsive compact/regular/desktop geometry.
+- Added dark/light glass material variants with separate readable text/icon contrast.
+- Added product-owned material depth, ambient active-state glow, pressed scaling, and responsive label transitions.
+- Wallet transaction sheets continue to hide the navigation while active.
+- No financial logic, balances, investment accounting, referrals, withdrawals, deposits, or Supabase schemas were changed.
+- This navigation architecture is now the locked reusable navigation model for Quantix Prime unless a later project directive explicitly supersedes it.
+
+## Latest deployment after navigation implementation
+- READY production deployment: dpl_4t2AaWKz9UHcqbE6SowWWWu21nZd
+- Commit: 137fe834447daf09565da4b878b02f9adb412bc2
+- Commit message: Fix navigation type import for production build
+- Production target: Vercel production
+- Deployment response: HTTP 200
+- Production source remains GitHub `main`.
