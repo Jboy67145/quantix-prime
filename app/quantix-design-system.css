@@ -140,3 +140,48 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
   .qp-glow-surface::before,
   .qp-loading-indicator span { animation: none !important; }
 }
+
+/* Quantix Prime theme hardening */
+:root{color-scheme:dark light;--qp-bg-light:#F3F8F7;--qp-text-light:#102D34;--qp-muted-light:#58736F;}
+.quantix-shell.light{color:var(--qp-text-light);background:var(--qp-bg-light)}
+.quantix-shell.light .app-frame{background:var(--qp-bg-light);color:var(--qp-text-light)}
+.quantix-shell.light .topbar{background:rgba(243,248,247,.94);border-bottom-color:#D5E5E1;color:#102D34}
+.quantix-shell.light .brand-lockup strong,.quantix-shell.light h1,.quantix-shell.light h2,.quantix-shell.light .section-heading,.quantix-shell.light .community-card strong,.quantix-shell.light .activity-copy strong,.quantix-shell.light .profile-card strong,.quantix-shell.light .metric strong,.quantix-shell.light .goal strong,.quantix-shell.light .plan-card strong,.quantix-shell.light .sheet-title h2{color:#102D34}
+.quantix-shell.light .muted,.quantix-shell.light .eyebrow{color:#58736F}
+.quantix-shell.light .icon-button,.quantix-shell.light .notification-dot{color:#1E4A48;background:#FFF;border-color:#CFE1DC}
+.quantix-shell.light .quick-action{color:#294B4B}
+.quantix-shell.light .quick-action span,.quantix-shell.light .community-icon,.quantix-shell.light .activity-icon,.quantix-shell.light .menu-icon{background:#E6F4F0;border-color:#C7DED8;color:#087D73}
+.quantix-shell.light .balance-card,.quantix-shell.light .lucky-hero,.quantix-shell.light .referral-card{color:#102D34;background:linear-gradient(135deg,#FFF,#E8F5F1);border-color:#BFDCD5}
+.quantix-shell.light .community-card,.quantix-shell.light .notice,.quantix-shell.light .profile-card,.quantix-shell.light .activity-list,.quantix-shell.light .menu-list,.quantix-shell.light .search-box,.quantix-shell.light .chat-composer,.quantix-shell.light .chat-card,.quantix-shell.light .topic-grid button,.quantix-shell.light .investment-row,.quantix-shell.light .referral-list,.quantix-shell.light .metric,.quantix-shell.light .goal{color:#102D34;background:#FFF;border-color:#D5E5E1}
+.quantix-shell.light .community-card p,.quantix-shell.light .activity-copy span,.quantix-shell.light .profile-card span,.quantix-shell.light .metric span,.quantix-shell.light .goal span,.quantix-shell.light .chat-head span,.quantix-shell.light .detail-points div,.quantix-shell.light .formula{color:#58736F}
+.quantix-shell.light .search-box input,.quantix-shell.light .chat-composer input,.quantix-shell.light input,.quantix-shell.light select,.quantix-shell.light textarea{color:#102D34;background:transparent;caret-color:#087D73}
+.quantix-shell.light input::placeholder,.quantix-shell.light textarea::placeholder{color:#718985;opacity:1}
+.quantix-shell.light .plan-card{color:#102D34;background:#FFF;border-color:#C9DED9}
+.quantix-shell.light .plan-card.emerald{background:#E8F8F2;border-color:#A8D9C9}
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+
+/* Premium full-screen loading */
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
