@@ -1,7 +1,11 @@
+/* Quantix Prime — Adaptive Floating Navigation
+ * Product-owned interaction model. The reference is used only as an interaction
+ * reference; all destinations, iconography and visual tokens belong to Quantix.
+ */
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { LucideIcon } from 'lucide-react'
+import type { CSSProperties, LucideIcon } from 'lucide-react'
 
 export type FloatingNavItem = {
   id: string
@@ -18,7 +22,7 @@ type Props = {
   hidden?: boolean
 }
 
-function useSpringValue(target: number, stiffness = 420, damping = 34, mass = 0.82) {
+function useSpringValue(target: number, reducedMotion: boolean) {
   const [value, setValue] = useState(target)
   const valueRef = useRef(target)
   const velocityRef = useRef(0)
@@ -27,12 +31,28 @@ function useSpringValue(target: number, stiffness = 420, damping = 34, mass = 0.
 
   useEffect(() => {
     targetRef.current = target
-    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current)
 
+    if (frameRef.current !== null) {
+      cancelAnimationFrame(frameRef.current)
+      frameRef.current = null
+    }
+
+    if (reducedMotion) {
+      valueRef.current = target
+      velocityRef.current = 0
+      setValue(target)
+      return
+    }
+
+    const stiffness = 520
+    const damping = 34
+    const mass = 0.8
     let last = performance.now()
+
     const tick = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.032)
       last = now
+
       const displacement = targetRef.current - valueRef.current
       const acceleration = (stiffness * displacement - damping * velocityRef.current) / mass
       velocityRef.current += acceleration * dt
@@ -51,22 +71,30 @@ function useSpringValue(target: number, stiffness = 420, damping = 34, mass = 0.
     }
 
     frameRef.current = requestAnimationFrame(tick)
+
     return () => {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current)
     }
-  }, [target, stiffness, damping, mass])
+  }, [target, reducedMotion])
 
   return value
 }
 
-export function FloatingNavigation({ items, activeId, onChange, className = '', hidden = false }: Props) {
+export function FloatingNavigation({
+  items,
+  activeId,
+  onChange,
+  className = '',
+  hidden = false,
+}: Props) {
   const activeIndex = Math.max(0, items.findIndex(item => item.id === activeId))
-  const activeProgress = useSpringValue(activeIndex)
-  const [pressedId, setPressedId] = useState<string | null>(null)
   const [reducedMotion, setReducedMotion] = useState(false)
+  const [pressedId, setPressedId] = useState<string | null>(null)
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([])
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
+  const gestureActive = useRef(false)
   const lastGestureIndex = useRef(activeIndex)
+  const activeProgress = useSpringValue(activeIndex, reducedMotion)
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -87,7 +115,9 @@ export function FloatingNavigation({ items, activeId, onChange, className = '', 
 
   const haptic = (duration = 8) => {
     if (reducedMotion || typeof navigator === 'undefined' || !('vibrate' in navigator)) return
-    try { navigator.vibrate(duration) } catch {}
+    try {
+      navigator.vibrate(duration)
+    } catch {}
   }
 
   const select = (item: FloatingNavItem, tactile = true) => {
@@ -114,12 +144,13 @@ export function FloatingNavigation({ items, activeId, onChange, className = '', 
 
     if (nearest >= 0 && nearest !== lastGestureIndex.current) {
       lastGestureIndex.current = nearest
-      select(items[nearest], true)
+      select(items[nearest])
     }
   }
 
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>, id: string) => {
     pointerStart.current = { x: event.clientX, y: event.clientY }
+    gestureActive.current = false
     setPressedId(id)
     event.currentTarget.setPointerCapture?.(event.pointerId)
   }
@@ -127,15 +158,50 @@ export function FloatingNavigation({ items, activeId, onChange, className = '', 
   const handlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
     const start = pointerStart.current
     if (!start || event.pointerType === 'mouse') return
+
     const dx = event.clientX - start.x
     const dy = event.clientY - start.y
-    if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy)) return
+    if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return
+
+    gestureActive.current = true
     selectNearest(event.clientX)
   }
 
-  const clearPointer = () => {
+  const clearPointer = (event?: React.PointerEvent<HTMLButtonElement>) => {
     pointerStart.current = null
+    gestureActive.current = false
     setPressedId(null)
+
+    if (
+      event &&
+      event.currentTarget.hasPointerCapture?.(event.pointerId)
+    ) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (!items.length) return
+
+    let nextIndex = index
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      nextIndex = (index + 1) % items.length
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      nextIndex = (index - 1 + items.length) % items.length
+    } else if (event.key === 'Home') {
+      nextIndex = 0
+    } else if (event.key === 'End') {
+      nextIndex = items.length - 1
+    } else {
+      return
+    }
+
+    event.preventDefault()
+    const next = items[nextIndex]
+    if (!next?.disabled) {
+      select(next, false)
+      itemRefs.current[nextIndex]?.focus()
+    }
   }
 
   return (
@@ -144,37 +210,51 @@ export function FloatingNavigation({ items, activeId, onChange, className = '', 
       aria-label="Primary navigation"
       data-active-index={activeIndex}
       data-active-label={selectedLabel}
-      style={{ ['--qp-active-progress' as string]: activeProgress }}
+      style={{ ['--qp-active-progress' as string]: activeProgress } as CSSProperties}
     >
       <div className="floating-navigation__surface">
         <span className="floating-navigation__ambient" aria-hidden="true" />
+
         {items.map((item, index) => {
           const Icon = item.icon
           const active = item.id === activeId
           const pressed = item.id === pressedId
+          const distance = Math.min(1, Math.abs(activeProgress - index))
+          const itemStyle = {
+            ['--qp-nav-distance' as string]: distance,
+          } as CSSProperties
 
           return (
             <button
-              ref={element => { itemRefs.current[index] = element }}
+              ref={element => {
+                itemRefs.current[index] = element
+              }}
               key={item.id}
               type="button"
               className={`floating-navigation__item ${active ? 'is-active' : ''} ${pressed ? 'is-pressed' : ''}`}
+              style={itemStyle}
               aria-current={active ? 'page' : undefined}
               aria-label={item.label}
               aria-disabled={item.disabled || undefined}
               disabled={item.disabled}
               onPointerDown={event => handlePointerDown(event, item.id)}
               onPointerMove={handlePointerMove}
-              onPointerCancel={clearPointer}
-              onPointerUp={clearPointer}
+              onPointerCancel={event => clearPointer(event)}
+              onPointerUp={event => clearPointer(event)}
               onPointerLeave={event => {
-                if (event.pointerType === 'mouse') clearPointer()
+                if (event.pointerType === 'mouse') clearPointer(event)
               }}
-              onClick={() => select(item)}
+              onClick={() => {
+                if (!gestureActive.current) select(item)
+              }}
+              onKeyDown={event => handleKeyDown(event, index)}
             >
               <span className="floating-navigation__item-inner">
                 <span className="floating-navigation__icon-wrap" aria-hidden="true">
-                  <Icon className="floating-navigation__icon" strokeWidth={active ? 2.15 : 1.9} />
+                  <Icon
+                    className="floating-navigation__icon"
+                    strokeWidth={active ? 2.15 : 1.9}
+                  />
                 </span>
                 <span className="floating-navigation__label">{item.label}</span>
               </span>
