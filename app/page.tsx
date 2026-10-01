@@ -349,4 +349,81 @@ function NotificationPanel({ notices, close }: { notices: Notice[]; close: () =>
     {notices.length === 0 ? <p className="muted">No notifications yet.</p> : notices.map((n) => <button className={n.readAt ? 'notice-row read' : 'notice-row'} key={n.id} disabled={busy} onClick={() => void read(n.id)}><Bell size={15} /><span><b>{n.title}</b><small>{n.body}</small></span>{!n.readAt && <i className="unread-indicator" />}</button>)}
   </div> }
 
-function InvestmentSheet({ plan, close, notify }: { plan: Plan; close: () => void; notify: (s: string) => void }) { const [busy, setBusy] = useState(false); return <div className="sheet-backdrop" onClick={close}><section className="sheet" onClick={(e) => e.stopPropagation()}><div className="sheet-handle" /><div className="sheet-title"><div><p className="eyebrow">Confirm {plan.name}</p><h2>Wallet investment</h2></div><button className="icon-button" onClick={close}><X size={18} /></button></div><p className="sheet-copy">{money(plan.minimumMinor)} will be deducted from your available balance. Your {money(plan.purchaseBonusMinor)} instant bonus is credited separately.</p><div className="plan-calcs"><span><small>Principal</small><b>{money(plan.minimumMinor)}</b></span><span><small>Profit</small><b>{money(plan.totalEarningsMinor - plan.minimumMinor)}</b></span><span><small>Total expected</small><b>{money(plan.totalExpectedPayoutMinor)}</b></span></div><button className="primary-button full" disabled={busy} onClick={async () => { setBusy(true); try { await purchaseInvestment({ planId: plan.id }); notify('Investment purchased successfully. Your balance has been updated.'); close(); window.dispatchEvent(new CustomEvent('quantix:refresh')) } catch (e) { notify(e instanceof Error ? e.message : 'Unable to purchase investment') } finally { setBusy(false) } }}>{busy ? 'Processing...' : 'Confirm investment'} <Check size={16} /></button></section></div> }
+function InvestmentSheet({ plan, close, notify }: { plan: Plan; close: () => void; notify: (s: string) => void }) {
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = previousOverflow }
+  }, [])
+
+  const confirmInvestment = async () => {
+    setBusy(true)
+    try {
+      await purchaseInvestment({ planId: plan.id })
+      notify('Investment purchased successfully. Your balance has been updated.')
+      close()
+      window.dispatchEvent(new CustomEvent('quantix:refresh'))
+    } catch (e) {
+      notify(e instanceof Error ? e.message : 'Unable to purchase investment')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="sheet-backdrop qp-investment-backdrop" onClick={close}>
+      <section
+        className="sheet qp-investment-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="investment-confirmation-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sheet-handle-area" aria-hidden="true">
+          <div className="sheet-handle" />
+        </div>
+
+        <div className="sheet-title sheet-header">
+          <div>
+            <p className="eyebrow">Confirm {plan.name}</p>
+            <h2 id="investment-confirmation-title">Wallet investment</h2>
+          </div>
+          <button className="icon-button" onClick={close} aria-label="Close investment confirmation">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="qp-investment-scroll">
+          <p className="sheet-copy">
+            {money(plan.minimumMinor)} will be deducted from your available balance. Your {money(plan.purchaseBonusMinor)} instant bonus is credited separately.
+          </p>
+
+          <div className="plan-calcs">
+            <span><small>Principal</small><b>{money(plan.minimumMinor)}</b></span>
+            <span><small>Profit</small><b>{money(plan.totalEarningsMinor - plan.minimumMinor)}</b></span>
+            <span><small>Total expected</small><b>{money(plan.totalExpectedPayoutMinor)}</b></span>
+          </div>
+
+          <div className="qp-investment-summary">
+            <span><small>Duration</small><b>{plan.durationDays} calendar days</b></span>
+            <span><small>Purchase bonus</small><b>{money(plan.purchaseBonusMinor)}</b></span>
+            <span><small>After confirmation</small><b>Your plan starts immediately</b></span>
+          </div>
+        </div>
+
+        <div className="qp-investment-actions">
+          <button
+            className="primary-button full"
+            disabled={busy}
+            onClick={confirmInvestment}
+          >
+            {busy ? 'Processing...' : 'Confirm investment'} <Check size={16} />
+          </button>
+          <p>Review the figures above before confirming. Your wallet is updated only after the purchase succeeds.</p>
+        </div>
+      </section>
+    </div>
+  )
+}
