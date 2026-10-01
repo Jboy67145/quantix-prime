@@ -174,3 +174,160 @@
 .qp-transaction-sheet .sheet-scroll > *:last-child {
   margin-bottom: 4px;
 }
+
+
+/* Universal sheet safety: every non-transaction sheet can grow or scroll instead of
+ * clipping its last control on short/mobile viewports. */
+.sheet-backdrop > .sheet:not(.qp-transaction-sheet):not(.qp-investment-sheet) {
+  max-height: min(90svh, 760px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(125,232,213,.34) transparent;
+  padding-bottom: max(26px, env(safe-area-inset-bottom));
+}
+
+.sheet-backdrop > .sheet:not(.qp-transaction-sheet):not(.qp-investment-sheet)::-webkit-scrollbar {
+  width: 5px;
+}
+.sheet-backdrop > .sheet:not(.qp-transaction-sheet):not(.qp-investment-sheet)::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sheet-backdrop > .sheet:not(.qp-transaction-sheet):not(.qp-investment-sheet)::-webkit-scrollbar-thumb {
+  background: rgba(125,232,213,.30);
+  border-radius: 999px;
+}
+
+/* Investment confirmation: the action is always visible while the figures/details
+ * remain independently scrollable on short phones and with larger text settings. */
+.qp-investment-backdrop {
+  z-index: 110 !important;
+  padding: 0 0 env(safe-area-inset-bottom);
+}
+.qp-investment-sheet {
+  position: fixed !important;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: min(100vw, 520px) !important;
+  height: min(78svh, 680px);
+  max-height: calc(100svh - 8px);
+  min-height: min(520px, calc(100svh - 8px));
+  margin: 0 auto;
+  padding: 0 20px calc(10px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+  border-radius: 24px 24px 0 0 !important;
+  box-sizing: border-box;
+  background: rgba(16,40,48,.96);
+  -webkit-backdrop-filter: blur(28px) saturate(1.25);
+  backdrop-filter: blur(28px) saturate(1.25);
+  box-shadow: 0 -24px 70px rgba(0,0,0,.40), 0 -2px 18px rgba(84,219,194,.10);
+}
+.qp-investment-sheet .sheet-header {
+  flex: 0 0 auto;
+}
+.qp-investment-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2px 0 12px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(125,232,213,.34) transparent;
+}
+.qp-investment-scroll::-webkit-scrollbar { width: 5px; }
+.qp-investment-scroll::-webkit-scrollbar-track { background: transparent; }
+.qp-investment-scroll::-webkit-scrollbar-thumb { background: rgba(125,232,213,.30); border-radius: 999px; }
+.qp-investment-summary {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 4px;
+}
+.qp-investment-summary span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid rgba(125,232,213,.10);
+  border-radius: 12px;
+  background: rgba(255,255,255,.035);
+}
+.qp-investment-summary small {
+  color: #8fa9a4;
+  font-size: 10px;
+}
+.qp-investment-summary b {
+  color: #d9f7f0;
+  font-size: 11px;
+  text-align: right;
+}
+.qp-investment-actions {
+  flex: 0 0 auto;
+  padding: 10px 0 2px;
+  border-top: 1px solid rgba(125,232,213,.10);
+  background: rgba(16,40,48,.98);
+}
+.qp-investment-actions .primary-button {
+  min-height: 50px;
+}
+.qp-investment-actions p {
+  margin: 7px 4px 0;
+  color: #789694;
+  font-size: 9px;
+  line-height: 1.4;
+  text-align: center;
+}
+.light .qp-investment-sheet {
+  background: rgba(244,249,247,.98);
+  border-color: rgba(8,125,115,.18);
+  box-shadow: 0 -20px 60px rgba(32,73,66,.18);
+}
+.light .qp-investment-actions {
+  background: rgba(244,249,247,.99);
+  border-top-color: rgba(8,125,115,.12);
+}
+.light .qp-investment-summary span {
+  background: rgba(8,125,115,.035);
+  border-color: rgba(8,125,115,.10);
+}
+.light .qp-investment-summary small { color: #5d7e79; }
+.light .qp-investment-summary b { color: #12383b; }
+
+@media (max-width: 520px) {
+  .qp-investment-sheet {
+    width: 100vw !important;
+    min-height: min(500px, calc(100svh - 8px));
+    height: min(82svh, 680px);
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .qp-investment-sheet .sheet-title h2 { font-size: 21px; }
+  .qp-investment-actions { padding-top: 9px; }
+}
+
+@media (max-height: 620px) {
+  .qp-investment-sheet {
+    height: calc(100svh - 6px);
+    min-height: calc(100svh - 6px);
+  }
+}
+
+@media (max-width: 767px) {
+  .screen-content {
+    padding-bottom: 128px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qp-investment-sheet,
+  .qp-investment-scroll {
+    scroll-behavior: auto;
+  }
+}
