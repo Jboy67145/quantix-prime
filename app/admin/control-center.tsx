@@ -141,7 +141,7 @@ export default function ControlCenter(){
    setSelectedUser(u); setProfile({name:u.name||'',username:u.username||''}); setTab('wallet'); setError(''); setSuccess(''); setManageOpen(true)
  }
 
- if(!data)return <main className="admin-shell"><div className="admin-frame"><div className="admin-shimmer" role="status" aria-live="polite"><div className="shimmer-block shimmer-title"/><div className="shimmer-grid">{Array.from({length:5}).map((_,i)=><div className="shimmer-block shimmer-stat" key={i}/>)}</div><div className="shimmer-block shimmer-panel"/><div className="shimmer-block shimmer-panel"/><p className="qp-loading-status">{loadingMessage}</p></div></div></main>
+ if(!data)return <main className="admin-shell fluxent-admin"><div className="admin-frame"><div className="admin-shimmer" role="status" aria-live="polite"><div className="shimmer-block shimmer-title"/><div className="shimmer-grid">{Array.from({length:5}).map((_,i)=><div className="shimmer-block shimmer-stat" key={i}/>)}</div><div className="shimmer-block shimmer-panel"/><div className="shimmer-block shimmer-panel"/><p className="qp-loading-status">{loadingMessage}</p></div></div></main>
 
  const tabs:any[]=[
   ['overview','Overview',Shield],['users','Users',Users],['wallet','Wallet',Wallet],
@@ -153,8 +153,8 @@ export default function ControlCenter(){
  ]
 
  return <main className="admin-shell">
-  <div className="admin-frame max-w-7xl">
-   <header className="sticky top-0 z-20 border-b border-white/10 bg-black/85 px-4 py-4 backdrop-blur-xl">
+  <div className="admin-frame fluxent-admin-frame max-w-7xl">
+   <header className="admin-topbar sticky top-0 z-20 border-b px-4 py-4 backdrop-blur-xl">
     <div className="flex items-center justify-between gap-3">
      <div className="flex items-center gap-3">
       <button type="button" aria-label="Go back" className="icon-button" onClick={()=>router.back()}><ArrowLeft size={17}/></button>
@@ -178,7 +178,7 @@ export default function ControlCenter(){
       ['Live plans',data.plans.filter((x:any)=>x.active&&!x.deleted_at).length],
       ['Pending deposits',data.deposits.filter((x:any)=>x.status==='PENDING').length],
       ['Pending withdrawals',data.withdrawals.filter((x:any)=>x.status==='PENDING').length]
-    ].map((x:any)=><div className="rounded-3xl border border-white/10 bg-white/5 p-5" key={x[0]}><div className="text-sm opacity-60">{x[0]}</div><div className="mt-2 text-3xl font-semibold">{x[1]}</div></div>)}
+    ].map((x:any)=><div className="admin-stat rounded-3xl border p-5" key={x[0]}><div className="text-sm opacity-60">{x[0]}</div><div className="mt-2 text-3xl font-semibold">{x[1]}</div></div>)}
    </section>
 
    <div className="p-4">
@@ -360,20 +360,27 @@ export default function ControlCenter(){
        <button type="button" className="secondary-button" onClick={()=>setPlan({id:x.id,name:x.name,description:x.description,category:x.category,minimumMinor:Number(x.minimum_minor),maximumMinor:Number(x.maximum_minor),returnMinor:Number(x.return_minor ?? 0),durationDays:Number(x.duration_days),terms:x.terms,purchaseBonusMinor:Number(x.purchase_bonus_minor||0),active:x.active,displayOrder:x.display_order})}>Edit</button>
        <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(x.id,()=>archivePlan(x.id,!x.deleted_at,'Admin plan status change'),x.deleted_at?'Plan restored.':'Plan archived.')}>{x.deleted_at?<RotateCcw size={15}/>:<Archive size={15}/>} {x.deleted_at?'Restore':'Archive'}</button>
       </Row>)}<button type="button" className="secondary-button mt-3" onClick={()=>setPlan({...emptyPlan})}>New plan</button></Panel>
-      <Panel title={plan.id?'Edit plan':'Create plan'}><div className="grid gap-2">
-       <input className="account-form" placeholder="Plan name" value={plan.name} onChange={e=>setPlan({...plan,name:e.target.value})}/>
-       <textarea className="account-form min-h-20" placeholder="Description" value={plan.description} onChange={e=>setPlan({...plan,description:e.target.value})}/>
-       <select className="account-form" value={plan.category} onChange={e=>setPlan({...plan,category:e.target.value})}><option>DAILY</option><option>WEEKLY</option><option>MONTHLY</option></select>
+      <Panel title={plan.id?'Edit investment plan':'Create investment plan'}><div className="admin-edit-form">
+       <label className="admin-field"><span>Plan name</span><input className="account-form" placeholder="e.g. Starter Prime" value={plan.name} onChange={e=>setPlan({...plan,name:e.target.value})}/><small>Internal and customer-facing name used to identify this investment product.</small></label>
+       <label className="admin-field"><span>Plan description</span><textarea className="account-form min-h-20" placeholder="Explain what this plan offers" value={plan.description} onChange={e=>setPlan({...plan,description:e.target.value})}/><small>Short explanation customers see before choosing this plan.</small></label>
+       <label className="admin-field"><span>Plan category</span><select className="account-form" value={plan.category} onChange={e=>setPlan({...plan,category:e.target.value})}><option>DAILY</option><option>WEEKLY</option><option>MONTHLY</option></select><small>Groups the plan by its schedule/category in the customer experience.</small></label>
        {[
-        ['minimumMinor','Minimum ₦'],['maximumMinor','Maximum ₦'],['returnMinor','Return earned ₦'],['durationDays','Duration days'],['purchaseBonusMinor','Purchase bonus ₦'],['displayOrder','Display order']
-       ].map((x:any)=><input key={x[0]} className="account-form" type="number" placeholder={x[1]} value={['minimumMinor','maximumMinor','returnMinor','purchaseBonusMinor'].includes(x[0])?plan[x[0]]/100:plan[x[0]]} onChange={e=>setPlan({...plan,[x[0]]:['minimumMinor','maximumMinor','returnMinor','purchaseBonusMinor'].includes(x[0])?Math.round(Number(e.target.value)*100):Number(e.target.value)})}/> )}
-       <textarea className="account-form min-h-24" placeholder="Terms" value={plan.terms} onChange={e=>setPlan({...plan,terms:e.target.value})}/>
-       <label className="admin-checkbox"><input type="checkbox" checked={plan.active} onChange={e=>setPlan({...plan,active:e.target.checked})}/> Active</label>
+        ['minimumMinor','Minimum purchase amount (₦)','Lowest amount a customer is allowed to invest in this plan. Changing this updates the plan minimum shown to users.'],
+        ['maximumMinor','Maximum purchase amount (₦)','Highest amount allowed for one purchase. It cannot be lower than the minimum purchase amount.'],
+        ['returnMinor','Return earned (₦)','Return amount associated with the plan at the minimum purchase value. Review your business rules before changing.'],
+        ['durationDays','Duration (days)','Number of days before this investment reaches its scheduled maturity.'],
+        ['purchaseBonusMinor','Purchase bonus (₦)','Bonus credited under the existing purchase-bonus rules when a qualifying investment is made. Use zero if no bonus applies.'],
+        ['displayOrder','Display order','Controls the order in which this plan appears alongside other plans; smaller values appear first.']
+       ].map((x:any)=><label key={x[0]} className="admin-field"><span>{x[1]}</span><input className="account-form" type="number" min="0" step="1" inputMode="decimal" placeholder={x[1]} value={['minimumMinor','maximumMinor','returnMinor','purchaseBonusMinor'].includes(x[0])?Number(plan[x[0]]||0)/100:plan[x[0]]} onChange={e=>setPlan({...plan,[x[0]]:['minimumMinor','maximumMinor','returnMinor','purchaseBonusMinor'].includes(x[0])?Math.round(Number(e.target.value)*100):Number(e.target.value)})}/><small>{x[2]}</small></label>)}
+       <label className="admin-field"><span>Terms and conditions</span><textarea className="account-form min-h-24" placeholder="Enter customer terms and conditions" value={plan.terms} onChange={e=>setPlan({...plan,terms:e.target.value})}/><small>Rules customers should review before purchasing this plan. Keep this accurate and unambiguous.</small></label>
+       <label className="admin-checkbox"><input type="checkbox" checked={plan.active} onChange={e=>setPlan({...plan,active:e.target.checked})}/> <span>Plan is active</span></label><small className="admin-help">Active plans can be offered to customers. Archived plans are hidden from new purchases.</small>
        <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>{
          if(!plan.name.trim()||!plan.description.trim()||!plan.terms.trim())return setError('Plan name, description and terms are required.')
-         if(plan.maximumMinor<plan.minimumMinor)return setError('Maximum amount must be at least the minimum.')
+         if(!Number.isFinite(plan.minimumMinor)||plan.minimumMinor<=0)return setError('Minimum purchase must be greater than zero.')
+         if(!Number.isFinite(plan.maximumMinor)||plan.maximumMinor<plan.minimumMinor)return setError('Maximum amount must be at least the minimum.')
+         if(plan.returnMinor<0||plan.purchaseBonusMinor<0||plan.durationDays<1)return setError('Return and bonus cannot be negative, and duration must be at least one day.')
          setConfirmPlan({...plan})
-       }}><Save size={15}/>Save plan</button>
+       }}><Save size={15}/>Review and save plan</button>
       </div></Panel>
     </div>}
 
@@ -475,21 +482,20 @@ export default function ControlCenter(){
     {tab==='audit'&&<Panel title="Audit log"><SearchBox value={auditQ} onChange={setAuditQ} placeholder="Search action, target, actor or reason" count={filteredAudits.length} total={data.audits.length}/>{filteredAudits.map((x:any)=><Row key={x.id} title={x.action} meta={(x.actor_id||'system')+' · '+x.target_type+' · '+date(x.created_at)}>{x.reason&&<span className="text-xs opacity-60">{x.reason}</span>}</Row>)}</Panel>}
 
     {tab==='settings'&&<div className="grid gap-4 lg:grid-cols-2">
-      <Panel title="Withdrawal policy"><div className="grid gap-3">
-        <input className="account-form" value={policy.timezone} onChange={e=>setPolicy({...policy,timezone:e.target.value})} placeholder="Timezone (e.g. Africa/Lagos)"/>
-        <div><div className="text-sm opacity-70 mb-2">Allowed withdrawal days</div><div className="flex flex-wrap gap-2">{days.map(d=><label key={d} className="admin-checkbox"><input type="checkbox" checked={policy.enabledDays.includes(d)} onChange={e=>setPolicy({...policy,enabledDays:e.target.checked?[...policy.enabledDays,d]:policy.enabledDays.filter((x:string)=>x!==d)})}/>{d}</label>)}</div></div>
-        <div className="grid grid-cols-2 gap-2"><label className="text-sm opacity-80">Opens<input className="account-form mt-1 w-full" type="time" value={policy.startTime} onChange={e=>setPolicy({...policy,startTime:e.target.value})}/></label><label className="text-sm opacity-80">Closes<input className="account-form mt-1 w-full" type="time" value={policy.endTime} onChange={e=>setPolicy({...policy,endTime:e.target.value})}/></label></div>
-        <input className="account-form" type="number" min="1000" step="1" value={policy.minimumMinor/100} onChange={e=>setPolicy({...policy,minimumMinor:Math.round(Number(e.target.value)*100)})} placeholder="Minimum withdrawal ₦"/>
-        <input className="account-form" type="number" min="1000" step="1" value={policy.maximumMinor==null?'':policy.maximumMinor/100} onChange={e=>setPolicy({...policy,maximumMinor:e.target.value===''?null:Math.round(Number(e.target.value)*100)})} placeholder="Maximum withdrawal ₦ (optional)"/>
-        <p className="text-xs opacity-60">Minimum can be set from ₦1,000 upward. Leave maximum blank for no maximum.</p>
-        <label className="admin-checkbox"><input type="checkbox" checked={policy.enabled} onChange={e=>setPolicy({...policy,enabled:e.target.checked})}/> Withdrawals enabled</label>
+      <Panel title="Withdrawal policy"><div className="admin-edit-form">
+        <label className="admin-field"><span>Policy timezone</span><input className="account-form" value={policy.timezone} onChange={e=>setPolicy({...policy,timezone:e.target.value})} placeholder="Africa/Lagos"/><small>Timezone used to interpret the withdrawal schedule. Use an IANA name such as Africa/Lagos.</small></label>
+        <div className="admin-field"><span>Allowed withdrawal days</span><div className="flex flex-wrap gap-2">{days.map(d=><label key={d} className="admin-checkbox"><input type="checkbox" checked={policy.enabledDays.includes(d)} onChange={e=>setPolicy({...policy,enabledDays:e.target.checked?[...policy.enabledDays,d]:policy.enabledDays.filter((x:string)=>x!==d)})}/>{d}</label>)}</div><small>Customers can submit withdrawal requests only on selected days when the policy is enabled.</small></div>
+        <div className="grid grid-cols-2 gap-2"><label className="admin-field"><span>Opens</span><input className="account-form mt-1 w-full" type="time" value={policy.startTime} onChange={e=>setPolicy({...policy,startTime:e.target.value})}/><small>Start of the permitted withdrawal window.</small></label><label className="admin-field"><span>Closes</span><input className="account-form mt-1 w-full" type="time" value={policy.endTime} onChange={e=>setPolicy({...policy,endTime:e.target.value})}/><small>End of the permitted withdrawal window.</small></label></div>
+        <label className="admin-field"><span>Minimum withdrawal (₦)</span><input className="account-form" type="number" min="1000" step="1" value={policy.minimumMinor/100} onChange={e=>setPolicy({...policy,minimumMinor:Math.round(Number(e.target.value)*100)})} placeholder="Minimum withdrawal ₦"/><small>Smallest withdrawal request accepted by the policy. The server enforces a floor of ₦1,000.</small></label>
+        <label className="admin-field"><span>Maximum withdrawal (₦) — optional</span><input className="account-form" type="number" min="1000" step="1" value={policy.maximumMinor==null?'':policy.maximumMinor/100} onChange={e=>setPolicy({...policy,maximumMinor:e.target.value===''?null:Math.round(Number(e.target.value)*100)})} placeholder="Leave blank for no maximum"/><small>Largest withdrawal request allowed. Leave empty to impose no policy maximum.</small></label>
+        <label className="admin-checkbox"><input type="checkbox" checked={policy.enabled} onChange={e=>setPolicy({...policy,enabled:e.target.checked})}/> Withdrawals enabled</label><small className="admin-help">When disabled, new withdrawal requests should be unavailable to customers.</small>
         <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>{if(!policy.enabledDays.length)return setError('Select at least one withdrawal day.');if(policy.minimumMinor<100000)return setError('Minimum withdrawal cannot be lower than ₦1,000.');if(policy.maximumMinor!==null&&policy.maximumMinor<policy.minimumMinor)return setError('Maximum withdrawal must be at least minimum.');void act('withdrawal-policy',()=>savePolicy(policy),'Withdrawal policy saved.')}}><Save size={15}/>Save withdrawal policy</button>
       </div></Panel>
-      <Panel title="Deposit policy"><div className="grid gap-3">
-        <input className="account-form" value={depositPolicy.timezone} onChange={e=>setDepositPolicy({...depositPolicy,timezone:e.target.value})} placeholder="Timezone (e.g. Africa/Lagos)"/>
-        <div><div className="text-sm opacity-70 mb-2">Allowed deposit days</div><div className="flex flex-wrap gap-2">{days.map(d=><label key={d} className="admin-checkbox"><input type="checkbox" checked={depositPolicy.enabledDays.includes(d)} onChange={e=>setDepositPolicy({...depositPolicy,enabledDays:e.target.checked?[...depositPolicy.enabledDays,d]:depositPolicy.enabledDays.filter((x:string)=>x!==d)})}/>{d}</label>)}</div></div>
-        <div className="grid grid-cols-2 gap-2"><label className="text-sm opacity-80">Opens<input className="account-form mt-1 w-full" type="time" value={depositPolicy.startTime} onChange={e=>setDepositPolicy({...depositPolicy,startTime:e.target.value})}/></label><label className="text-sm opacity-80">Closes<input className="account-form mt-1 w-full" type="time" value={depositPolicy.endTime} onChange={e=>setDepositPolicy({...depositPolicy,endTime:e.target.value})}/></label></div>
-        <p className="text-xs opacity-60">Deposits submitted outside this schedule are blocked by the server and database policy.</p>
+      <Panel title="Deposit policy"><div className="admin-edit-form">
+        <label className="admin-field"><span>Policy timezone</span><input className="account-form" value={depositPolicy.timezone} onChange={e=>setDepositPolicy({...depositPolicy,timezone:e.target.value})} placeholder="Africa/Lagos"/><small>Timezone used to interpret the deposit schedule.</small></label>
+        <div className="admin-field"><span>Allowed deposit days</span><div className="flex flex-wrap gap-2">{days.map(d=><label key={d} className="admin-checkbox"><input type="checkbox" checked={depositPolicy.enabledDays.includes(d)} onChange={e=>setDepositPolicy({...depositPolicy,enabledDays:e.target.checked?[...depositPolicy.enabledDays,d]:depositPolicy.enabledDays.filter((x:string)=>x!==d)})}/>{d}</label>)}</div><small>New deposit submissions are limited to these days when the policy is enabled.</small></div>
+        <div className="grid grid-cols-2 gap-2"><label className="admin-field"><span>Opens</span><input className="account-form mt-1 w-full" type="time" value={depositPolicy.startTime} onChange={e=>setDepositPolicy({...depositPolicy,startTime:e.target.value})}/><small>Start of the permitted deposit window.</small></label><label className="admin-field"><span>Closes</span><input className="account-form mt-1 w-full" type="time" value={depositPolicy.endTime} onChange={e=>setDepositPolicy({...depositPolicy,endTime:e.target.value})}/><small>End of the permitted deposit window.</small></label></div>
+        <p className="admin-help">Deposit submissions outside this schedule are blocked by the server and database policy.</p>
         <label className="admin-checkbox"><input type="checkbox" checked={depositPolicy.enabled} onChange={e=>setDepositPolicy({...depositPolicy,enabled:e.target.checked})}/> Deposits enabled</label>
         <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>{if(!depositPolicy.enabledDays.length)return setError('Select at least one deposit day.');void act('deposit-policy',()=>saveDepositPolicy(depositPolicy),'Deposit policy saved.')}}><Save size={15}/>Save deposit policy</button>
       </div></Panel>
