@@ -260,21 +260,44 @@ export async function updateUserProfile(input:z.input<typeof userProfile>){
   return r.data
 }
 
-export async function setUserState(id:string,status:'ACTIVE'|'SUSPENDED'|'RESTRICTED',reason:string){
-  const a=await ctx(),i=uuid.parse(id),s=await createClient()
-  if(i===a.user.id && status!=='ACTIVE') throw new Error('You cannot suspend or restrict the currently signed-in administrator.')
-  const before=(await s.from('profiles').select('*').eq('id',i).maybeSingle()).data
+export async function setUserState(id:string,status:'ACTIVE'|'SUSPENDED'|'BANNED',reason:string){
+  const actor=await ctx(),i=uuid.parse(id),service=createServiceClient()
+  if(i===actor.user.id && status!=='ACTIVE') throw new Error('You cannot suspend or ban the currently signed-in administrator.')
+  const {data:before,error:readError}=await service.from('profiles').select('*').eq('id',i).maybeSingle()
+  if(readError) throw new Error(`Unable to load user profile: ${readError.message}`)
   if(!before) throw new Error('User profile not found.')
-  const r=await s.from('profiles').update({
+  if(['ADMIN','SUPER_ADMIN'].includes(String(before.role||'').toUpperCase()) && status!=='ACTIVE'){
+    throw new Error('Administrator accounts cannot be suspended or banned from this control. Use a separately authorized super-admin process.')
+  }
+
+  // Apply the authentication restriction first so a successful admin decision
+  // also blocks new sessions, not merely the UI. "876000h" is a long-duration
+  // Auth ban; restoring the account explicitly clears the Auth ban.
+  const authResult=await service.auth.admin.updateUserById(i,{
+    ban_duration:status==='ACTIVE'?'none':'876000h'
+  })
+  if(authResult.error) throw new Error(`Authentication restriction failed; profile was not changed: ${authResult.error.message}`)
+
+  const now=new Date().toISOString()
+  const {data:after,error:updateError}=await service.from('profiles').update({
     status,
-    suspended_at:status==='ACTIVE'?null:new Date().toISOString(),
-    updated_at:new Date().toISOString(),
+    suspended_at:status==='ACTIVE'?null:now,
+    updated_at:now,
   }).eq('id',i).select().single()
-  if(r.error) throw new Error(r.error.message)
-  await log(a,'USER_STATUS_CHANGED','USER',i,before,r.data,reason)
+  if(updateError){
+    // Best-effort rollback of the Auth ban if the profile write fails.
+    await service.auth.admin.updateUserById(i,{ban_duration:before.status && before.status!=='ACTIVE'?'876000h':'none'})
+    throw new Error(`Profile status update failed: ${updateError.message}`)
+  }
+  try {
+    await log(actor,status==='BANNED'?'USER_BANNED':status==='SUSPENDED'?'USER_SUSPENDED':'USER_RESTORED','USER',i,before,after,reason)
+  } catch (auditError) {
+    // Do not silently report success if the audit trail could not be written.
+    throw auditError
+  }
   revalidatePath('/admin')
   revalidatePath('/')
-  return r.data
+  return after
 }
 
 const policy=z.object({
