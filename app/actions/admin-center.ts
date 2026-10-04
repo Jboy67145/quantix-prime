@@ -582,3 +582,41 @@ export async function cancelInvestment(input:{userId:string;investmentId:string;
     return {ok:false as const,error:e instanceof Error ? e.message : 'Investment cancellation failed. No changes were made.'}
   }
 }
+
+
+export async function generateManualPasswordResetLink(input: { userId: string }) {
+  const actor = await ctx()
+  const userId = z.string().uuid().parse(input.userId)
+  const service = createServiceClient()
+  const { data: target, error: targetError } = await service.auth.admin.getUserById(userId)
+  if (targetError || !target.user?.email) throw new Error('The selected account has no usable email address.')
+  const { data: profile } = await service.from('profiles').select('id,name,username,role,status').eq('id', userId).maybeSingle()
+  if (!profile) throw new Error('The selected account profile could not be verified.')
+  if (profile.role === 'ADMIN' || profile.role === 'SUPER_ADMIN') {
+    throw new Error('Manual reset links for administrator accounts require the dedicated administrator recovery process.')
+  }
+  const { getAppUrl } = await import('@/lib/env')
+  const redirectTo = `${getAppUrl()}/reset-password`
+  const { data, error } = await service.auth.admin.generateLink({
+    type: 'recovery',
+    email: target.user.email,
+    options: { redirectTo },
+  })
+  if (error || !data?.properties?.action_link) {
+    throw new Error(error?.message || 'Supabase did not generate a password recovery link.')
+  }
+  await log(actor, 'MANUAL_PASSWORD_RESET_LINK_GENERATED', 'USER', userId, null, {
+    email: target.user.email,
+    username: profile.username,
+    expires_at: data.properties?.expires_at || null,
+    delivery: 'MANUAL_COPY_NO_EMAIL_SENT',
+  }, 'Admin generated a password reset link for manual delivery.')
+  return {
+    ok: true,
+    link: data.properties.action_link,
+    email: target.user.email,
+    name: profile.name,
+    username: profile.username,
+    expiresAt: data.properties?.expires_at || null,
+  }
+}
