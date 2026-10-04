@@ -443,3 +443,26 @@ h1, h2, p { margin: 0; } h1 { font-size: 26px; line-height: 1.15; letter-spacing
 .qp-transaction-sheet .form-error { color: #ffb8b4; font-weight: 600; line-height: 1.5; }
 .qp-transaction-sheet input[type="file"] { color: #e5f2f0; }
 .qp-transaction-sheet input[type="file"]::file-selector-button { margin-right: 10px; padding: 8px 12px; border: 1px solid #4b7778; border-radius: 10px; background: #173a40; color: #f2fbf9; }
+
+/* Deposit modal final readability and account-number fit fix. */
+.qp-transaction-sheet { color:#f0fbf8!important; }
+.qp-transaction-sheet p,.qp-transaction-sheet label,.qp-transaction-sheet small,
+.qp-transaction-sheet .opacity-50,.qp-transaction-sheet .opacity-55,
+.qp-transaction-sheet .opacity-60,.qp-transaction-sheet .opacity-70,
+.qp-transaction-sheet .text-xs,.qp-transaction-sheet .text-sm { color:#d0e5e1!important; opacity:1!important; }
+.qp-transaction-sheet .eyebrow,.qp-transaction-sheet .deposit-readable-label { color:#a8d2cb!important; opacity:1!important; }
+.qp-transaction-sheet .sheet-title h2,.qp-transaction-sheet .sheet-step-title h2 { color:#f4fffc!important; }
+.qp-transaction-sheet .funding-account { min-width:0; overflow:visible!important; padding:16px!important; }
+.qp-transaction-sheet .funding-account > div { min-width:0; width:100%; }
+.qp-transaction-sheet .funding-account .space-y-2 { display:grid; gap:13px!important; }
+.qp-transaction-sheet .funding-account-field { display:grid; grid-template-columns:minmax(0,1fr); gap:5px; min-width:0; width:100%; }
+.qp-transaction-sheet .funding-account-value { display:flex; align-items:center; justify-content:space-between; gap:10px; min-width:0; width:100%; color:#f5fffd!important; font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
+.qp-transaction-sheet .funding-account-value > strong,.qp-transaction-sheet .funding-account-value > span { min-width:0; max-width:100%; overflow-wrap:anywhere; white-space:normal!important; color:#f5fffd!important; }
+.qp-transaction-sheet .funding-account-value button { flex:0 0 34px!important; width:34px!important; height:34px!important; min-width:34px; }
+.qp-transaction-sheet .funding-account .deposit-readable-label { text-transform:uppercase; letter-spacing:.055em; font-size:11px!important; font-weight:750; line-height:1.4; }
+.qp-transaction-sheet .funding-account.selected { border-color:rgba(94,232,202,.58)!important; box-shadow:0 0 0 1px rgba(94,232,202,.16),0 10px 26px rgba(0,0,0,.18); }
+.qp-transaction-sheet .sheet-scroll { overflow-x:hidden; }
+.qp-transaction-sheet .funding-account-list { min-width:0; }
+.qp-transaction-sheet .funding-account-list > .eyebrow { margin-bottom:10px; color:#a8d2cb!important; opacity:1!important; }
+.qp-transaction-sheet input,.qp-transaction-sheet textarea,.qp-transaction-sheet select { color:#f5fffd!important; }
+.qp-transaction-sheet input::placeholder,.qp-transaction-sheet textarea::placeholder { color:#a8c0bc!important; opacity:1!important; }
