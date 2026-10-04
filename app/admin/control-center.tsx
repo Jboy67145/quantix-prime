@@ -197,9 +197,14 @@ export default function ControlCenter(){
       <div className="mb-4 flex flex-col gap-2 sm:flex-row"><div className="flex flex-1 gap-2"><Search className="mt-3 opacity-50"/><input className="account-form flex-1" placeholder="Search name, username, email or UUID" value={q} onChange={e=>setQ(e.target.value)}/></div><div className="secondary-button"><Users size={15}/>{users.length} shown · {data.registeredUserCount} users · {data.adminAccountCount} admins</div></div>
       {users.map((u:any)=><Row key={u.id} title={(u.name||'Unnamed')+' · '+(u.username||'No username')} meta={(u.email||'No email')+' · '+u.status+' · '+u.role+' · '+u.id+' · '+naira(u.available_balance_minor)+' available · '+naira(u.invested_balance_minor)+' invested · '+naira(u.profit_balance_minor)+' profit'}>
        <button type="button" className="primary-button" onClick={()=>selectUser(u)}>Manage</button>
-       {u.status==='ACTIVE'
-        ?<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(u.id,()=>setUserState(u.id,'SUSPENDED','Administrative suspension'),'User suspended.')}>Suspend</button>
-        :<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>act(u.id,()=>setUserState(u.id,'ACTIVE','Administrative restoration'),'User activated.')}>Activate</button>}
+       {u.status==='BANNED'
+        ?<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>{if(window.confirm(`Unban ${u.name||u.username||'this user'} and restore sign-in access?`))void act(u.id,()=>setUserState(u.id,'ACTIVE','Administrator removed account ban'),'User unbanned and access restored.')}}>Unban</button>
+        :<>
+          {u.status==='ACTIVE'
+           ?<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>{if(window.confirm(`Suspend ${u.name||u.username||'this user'} temporarily?`))void act(u.id,()=>setUserState(u.id,'SUSPENDED','Administrative suspension'),'User suspended and sign-in blocked.')}}>Suspend</button>
+           :<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>{if(window.confirm(`Restore ${u.name||u.username||'this user'} and clear the suspension?`))void act(u.id,()=>setUserState(u.id,'ACTIVE','Administrative restoration'),'User activated and sign-in restored.')}}>Activate</button>}
+          <button type="button" className="danger-button" disabled={Boolean(busy)} onClick={()=>{const why=window.prompt(`Reason for permanently banning ${u.name||u.username||'this user'}:`);if(why&&why.trim().length>=3&&window.confirm('Confirm account ban? The user will be blocked from signing in.'))void act(u.id,()=>setUserState(u.id,'BANNED',why.trim()),'User banned and sign-in blocked.')}}>Ban account</button>
+        </>}
       </Row>)}
       {selectedUser&&<div className="mt-5 rounded-3xl border border-white/10 bg-black/20 p-5">
        <div className="flex flex-wrap items-start justify-between gap-3">
