@@ -259,3 +259,82 @@ h1, h2, p { margin: 0; } h1 { font-size: 26px; line-height: 1.15; letter-spacing
  .fluxent-admin::before,.fluxent-admin::after,.fluxent-admin .admin-stat { animation:none!important;transition:none!important; }
  .fluxent-admin * { scroll-behavior:auto!important; }
 }
+
+
+/* Quantix Prime admin: curved liquid-glass panels and scroll-under depth. */
+.fluxent-admin .admin-topbar {
+  position: sticky;
+  top: max(8px, env(safe-area-inset-top));
+  z-index: 30;
+  margin-bottom: 10px;
+  border-radius: 26px !important;
+  background: rgba(247,252,251,.78) !important;
+  border: 1px solid rgba(255,255,255,.92) !important;
+  box-shadow: 0 14px 42px rgba(35,83,91,.10), inset 0 1px 0 rgba(255,255,255,.9);
+  backdrop-filter: blur(30px) saturate(165%);
+  -webkit-backdrop-filter: blur(30px) saturate(165%);
+}
+.fluxent-admin .admin-panel {
+  min-width: 0;
+  overflow: hidden;
+  padding: clamp(14px, 1.7vw, 24px) !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(255,255,255,.92) !important;
+  background: linear-gradient(145deg, rgba(255,255,255,.82), rgba(241,250,248,.66)) !important;
+  box-shadow: 0 20px 55px rgba(36,91,96,.10), inset 0 1px 0 rgba(255,255,255,.95);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+}
+.fluxent-admin .admin-panel > h2 {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  margin-bottom: 16px !important;
+  color: #163e43;
+  letter-spacing: -.035em;
+}
+.fluxent-admin .admin-row {
+  position: relative;
+  isolation: isolate;
+  gap: 12px;
+  margin-bottom: 10px !important;
+  padding: 15px !important;
+  border-radius: 21px !important;
+  border: 1px solid rgba(111,164,163,.22) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,.82), rgba(239,249,247,.68)) !important;
+  box-shadow: 0 5px 16px rgba(36,91,96,.045), inset 0 1px 0 rgba(255,255,255,.9);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.fluxent-admin .admin-row:hover {
+  transform: translateY(-1px);
+  border-color: rgba(8,126,120,.34) !important;
+  box-shadow: 0 10px 26px rgba(36,91,96,.09), inset 0 1px 0 rgba(255,255,255,.95);
+}
+.fluxent-admin .admin-row > div:first-child { min-width: 0; flex: 1 1 220px; }
+.fluxent-admin .admin-row > div:last-child { align-items: center; }
+.fluxent-admin .admin-row strong { color: #1b4146; }
+.fluxent-admin .admin-row .text-xs { line-height: 1.5; overflow-wrap: anywhere; }
+.fluxent-admin .admin-panel .admin-row:last-child { margin-bottom: 0 !important; }
+.fluxent-admin .admin-panel .rounded-2xl { border-radius: 20px; }
+.fluxent-admin .admin-panel [class*="border-dashed"] { border-radius: 20px !important; background: rgba(255,255,255,.42); }
+.fluxent-admin .admin-topbar nav {
+  padding: 5px 2px 8px;
+  scrollbar-width: none;
+  scroll-padding-inline: 12px;
+  mask-image: linear-gradient(90deg, transparent, #000 2%, #000 97%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 2%, #000 97%, transparent);
+}
+.fluxent-admin .admin-topbar nav::-webkit-scrollbar { display: none; }
+.fluxent-admin .admin-topbar nav button { border-radius: 999px !important; flex: 0 0 auto; }
+.fluxent-admin .admin-frame { padding-bottom: max(22px, env(safe-area-inset-bottom)); }
+@media (max-width:700px) {
+  .fluxent-admin { padding: 7px !important; }
+  .fluxent-admin .admin-topbar { top: max(5px, env(safe-area-inset-top)); border-radius: 22px !important; }
+  .fluxent-admin .admin-panel { border-radius: 24px !important; padding: 14px !important; }
+  .fluxent-admin .admin-row { border-radius: 19px !important; padding: 13px !important; }
+  .fluxent-admin .admin-row > div:last-child { gap: 7px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .fluxent-admin .admin-row { transition: none !important; }
+  .fluxent-admin .admin-row:hover { transform: none; }
+}
