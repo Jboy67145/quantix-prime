@@ -406,3 +406,29 @@ h1, h2, p { margin: 0; } h1 { font-size: 26px; line-height: 1.15; letter-spacing
   .fluxent-admin button svg,.fluxent-admin a svg { transition:none!important; }
   .fluxent-admin button:active svg,.fluxent-admin a:active svg { transform:none!important;filter:none!important; }
 }
+
+
+/* Admin notification controls + floating scroll-to-top. */
+.admin-notification-settings{display:grid;gap:14px}
+.admin-notification-hero{display:flex;gap:12px;align-items:flex-start;padding:14px;border:1px solid rgba(108,190,181,.18);border-radius:18px;background:rgba(9,32,40,.36)}
+.admin-notification-icon{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border-radius:14px;background:rgba(32,205,182,.12);color:#7ee9d5;border:1px solid rgba(126,233,213,.18)}
+.admin-notification-hero h3{margin:0;font-size:15px;color:#eafff9}
+.admin-notification-hero p{margin:5px 0 0;color:#9db8b4;font-size:12px;line-height:1.55}
+.admin-notification-options{display:grid;gap:9px}
+.admin-notification-option{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:13px 14px;border:1px solid rgba(108,190,181,.18);border-radius:17px;background:rgba(8,29,37,.38)}
+.admin-notification-option span{display:grid;gap:4px}
+.admin-notification-option strong{font-size:13px;color:#eafff9}
+.admin-notification-option small{font-size:11px;line-height:1.45;color:#8fa9a5}
+.admin-notification-option input{width:21px;height:21px;flex:0 0 auto;accent-color:#18a895}
+.admin-notification-push{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border-radius:17px;border:1px solid rgba(126,233,213,.18);background:linear-gradient(135deg,rgba(22,70,74,.48),rgba(7,30,38,.34))}
+.admin-notification-push>div{display:grid;gap:4px}
+.admin-notification-push strong{font-size:13px;color:#eafff9}
+.admin-notification-push span{font-size:11px;color:#91aaa7;line-height:1.4}
+.admin-notification-status{display:flex;align-items:center;gap:7px;margin:0;color:#9ce9d7;font-size:11px;line-height:1.5}
+.admin-scroll-top-fab{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(18px,calc(env(safe-area-inset-bottom) + 18px));z-index:60;width:48px;height:48px;display:grid;place-items:center;border-radius:18px;border:1px solid rgba(126,233,213,.28)!important;background:rgba(10,38,46,.72)!important;color:#dffef6!important;box-shadow:0 14px 35px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.10);backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);transition:transform .22s cubic-bezier(.2,.9,.25,1.25),box-shadow .22s ease,background .22s ease}
+.admin-scroll-top-fab:hover{transform:translateY(-2px);box-shadow:0 18px 40px rgba(0,0,0,.34),0 0 0 1px rgba(126,233,213,.08)}
+.admin-scroll-top-fab:active{transform:scale(.94)}
+.admin-scroll-top-fab svg{transition:transform .22s cubic-bezier(.2,.9,.25,1.35)}
+.admin-scroll-top-fab:active svg{transform:scale(1.2);filter:drop-shadow(0 2px 7px rgba(84,219,194,.35))}
+@media(max-width:700px){.admin-notification-push{align-items:flex-start;flex-direction:column}.admin-scroll-top-fab{right:14px;bottom:max(16px,calc(env(safe-area-inset-bottom) + 16px));width:46px;height:46px;border-radius:17px}}
+@media(prefers-reduced-motion:reduce){.admin-scroll-top-fab,.admin-scroll-top-fab svg{transition:none!important}.admin-scroll-top-fab:active,.admin-scroll-top-fab:active svg{transform:none!important;filter:none!important}}
