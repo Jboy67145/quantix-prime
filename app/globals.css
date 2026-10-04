@@ -188,3 +188,74 @@ h1, h2, p { margin: 0; } h1 { font-size: 26px; line-height: 1.15; letter-spacing
  .admin-frame article > div:last-child button { flex-basis:100%; }
 }
 @media (prefers-reduced-motion:reduce) { .admin-frame * { scroll-behavior:auto !important; } }
+
+
+/* Fluxent™ Admin Environment — scoped exclusively to the admin control center.
+   Pearl / Liquid Glass: light translucent surfaces, calm teal light, tactile states. */
+.fluxent-admin {
+  --fa-ink:#18343b; --fa-muted:#607b80; --fa-border:rgba(107,157,159,.24);
+  --fa-glass:rgba(255,255,255,.66); --fa-glass-strong:rgba(255,255,255,.84);
+  --fa-teal:#087e78; --fa-teal-dark:#05645f; --fa-shadow:0 18px 55px rgba(31,91,94,.09);
+  position:relative; isolation:isolate; min-height:100svh; padding:clamp(10px,1.7vw,24px);
+  overflow-x:clip; color:var(--fa-ink);
+  background:
+    radial-gradient(ellipse at 8% 0%, rgba(127,229,216,.42), transparent 34%),
+    radial-gradient(ellipse at 94% 12%, rgba(174,214,255,.45), transparent 33%),
+    radial-gradient(ellipse at 56% 100%, rgba(203,238,225,.78), transparent 42%),
+    linear-gradient(145deg,#f7fcfb 0%,#edf6f5 48%,#f7faff 100%);
+  background-attachment:fixed;
+}
+.fluxent-admin::before,.fluxent-admin::after { content:"";position:fixed;z-index:-1;pointer-events:none;border-radius:50%;filter:blur(2px);will-change:transform; }
+.fluxent-admin::before { width:min(44vw,540px);height:min(44vw,540px);top:12%;right:-12%;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.62),rgba(112,218,208,.13) 42%,transparent 72%);animation:fluxent-admin-drift 20s ease-in-out infinite alternate; }
+.fluxent-admin::after { width:min(36vw,430px);height:min(36vw,430px);bottom:2%;left:-10%;background:radial-gradient(circle at 45% 40%,rgba(255,255,255,.75),rgba(153,201,255,.16) 44%,transparent 72%);animation:fluxent-admin-drift 26s ease-in-out infinite alternate-reverse; }
+.fluxent-admin .fluxent-admin-frame { max-width:1600px;width:100%;margin:0 auto;position:relative; }
+.fluxent-admin .admin-topbar { background:rgba(255,255,255,.68)!important;border:1px solid rgba(255,255,255,.9)!important;border-radius:24px;box-shadow:0 12px 38px rgba(39,88,96,.08);backdrop-filter:blur(28px) saturate(155%);-webkit-backdrop-filter:blur(28px) saturate(155%); }
+.fluxent-admin .admin-topbar strong { color:#153d43;letter-spacing:-.04em;font-size:20px; }
+.fluxent-admin .admin-topbar .tracking-\[\.25em\] { color:#648187;opacity:1; }
+.fluxent-admin .admin-stat,.fluxent-admin section.rounded-3xl,.fluxent-admin article.rounded-2xl {
+  background:var(--fa-glass)!important;border-color:rgba(255,255,255,.88)!important;
+  box-shadow:var(--fa-shadow);backdrop-filter:blur(22px) saturate(145%);-webkit-backdrop-filter:blur(22px) saturate(145%);
+}
+.fluxent-admin section.rounded-3xl { border-radius:22px!important; }
+.fluxent-admin section.rounded-3xl > h2 { color:#1a454a;letter-spacing:-.025em; }
+.fluxent-admin article.rounded-2xl { border:1px solid var(--fa-border)!important; }
+.fluxent-admin .admin-stat { border-radius:22px!important;transition:transform .24s ease,box-shadow .24s ease,border-color .24s ease; }
+.fluxent-admin .admin-stat:hover { transform:translateY(-2px);box-shadow:0 22px 55px rgba(31,91,94,.14);border-color:rgba(8,126,120,.24)!important; }
+.fluxent-admin .admin-stat div:first-child,.fluxent-admin .opacity-60,.fluxent-admin .opacity-50,.fluxent-admin .opacity-70 { color:var(--fa-muted); }
+.fluxent-admin .primary-button { background:linear-gradient(135deg,#0a8f84,#08716d)!important;color:#fff!important;border:1px solid rgba(255,255,255,.7)!important;box-shadow:0 7px 18px rgba(8,126,120,.16);transition:transform .18s ease,box-shadow .18s ease,filter .18s ease; }
+.fluxent-admin .primary-button:hover:not(:disabled) { transform:translateY(-1px);filter:saturate(1.12);box-shadow:0 11px 25px rgba(8,126,120,.23); }
+.fluxent-admin .secondary-button,.fluxent-admin .icon-button { color:#31565c!important;background:rgba(255,255,255,.68)!important;border:1px solid rgba(105,157,159,.25)!important;box-shadow:0 3px 12px rgba(39,88,96,.045);transition:background .18s ease,transform .18s ease,border-color .18s ease; }
+.fluxent-admin .secondary-button:hover:not(:disabled),.fluxent-admin .icon-button:hover:not(:disabled) { background:rgba(255,255,255,.96)!important;border-color:rgba(8,126,120,.4)!important;transform:translateY(-1px); }
+.fluxent-admin button:active:not(:disabled) { transform:scale(.98); }
+.fluxent-admin .account-form,.fluxent-admin input:not([type=checkbox]),.fluxent-admin textarea,.fluxent-admin select {
+  color:#17383e!important;background:rgba(255,255,255,.78)!important;border:1px solid rgba(104,151,154,.34)!important;border-radius:13px!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9);outline:none;transition:border-color .18s ease,box-shadow .18s ease,background .18s ease;
+}
+.fluxent-admin .account-form::placeholder,.fluxent-admin input::placeholder,.fluxent-admin textarea::placeholder { color:#81999d!important; }
+.fluxent-admin .account-form:focus,.fluxent-admin input:focus,.fluxent-admin textarea:focus,.fluxent-admin select:focus {
+  border-color:#35aaa0!important;box-shadow:0 0 0 3px rgba(53,170,160,.15),inset 0 1px 0 #fff!important;background:rgba(255,255,255,.96)!important;
+}
+.fluxent-admin .admin-field { display:grid;gap:7px;min-width:0;color:#24474d;font-size:13px;font-weight:650; }
+.fluxent-admin .admin-field small,.fluxent-admin .admin-help { display:block;color:#698388;font-size:11px;line-height:1.55;font-weight:450; }
+.fluxent-admin .admin-edit-form { display:grid;gap:15px; }
+.fluxent-admin .admin-checkbox { color:#355b60;background:rgba(255,255,255,.5);border:1px solid rgba(105,157,159,.22);border-radius:12px;padding:9px 11px; }
+.fluxent-admin .admin-checkbox input { accent-color:#087e78; }
+.fluxent-admin .admin-error { color:#873b40!important;background:rgba(255,237,237,.9)!important;border:1px solid rgba(198,105,112,.3);border-radius:15px;padding:12px 15px; }
+.fluxent-admin .admin-success { color:#176b56!important;background:rgba(226,250,239,.9)!important;border:1px solid rgba(79,173,135,.3);border-radius:15px;padding:12px 15px; }
+.fluxent-admin .sheet,.fluxent-admin .admin-manage-user-sheet,.fluxent-admin .admin-marquee-sheet { background:rgba(250,254,253,.96)!important;color:var(--fa-ink)!important;border:1px solid rgba(255,255,255,.95)!important;box-shadow:0 25px 90px rgba(21,65,72,.22);backdrop-filter:blur(32px); }
+.fluxent-admin .sheet-backdrop { background:rgba(25,55,61,.24)!important;backdrop-filter:blur(8px); }
+.fluxent-admin .marquee-fab span { color:#31565c;background:rgba(255,255,255,.88);border-color:rgba(105,157,159,.3);box-shadow:0 4px 18px rgba(39,88,96,.12); }
+.fluxent-admin .admin-shimmer .shimmer-block { background:linear-gradient(100deg,rgba(209,234,231,.55),rgba(255,255,255,.94),rgba(209,234,231,.55));background-size:220% 100%; }
+@keyframes fluxent-admin-drift { from{transform:translate3d(-2%,0,0) rotate(-5deg) scale(.96)} to{transform:translate3d(3%,2%,0) rotate(7deg) scale(1.04)} }
+@media(max-width:700px) {
+ .fluxent-admin { padding:8px; }
+ .fluxent-admin .admin-topbar { border-radius:18px; }
+ .fluxent-admin .admin-topbar nav { margin-top:12px; padding-bottom:5px; }
+ .fluxent-admin .admin-stat { padding:13px!important; }
+ .fluxent-admin .admin-edit-form { gap:13px; }
+ .fluxent-admin section.rounded-3xl { padding:13px!important; }
+}
+@media(prefers-reduced-motion:reduce) {
+ .fluxent-admin::before,.fluxent-admin::after,.fluxent-admin .admin-stat { animation:none!important;transition:none!important; }
+ .fluxent-admin * { scroll-behavior:auto!important; }
+}
