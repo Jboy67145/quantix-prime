@@ -23,11 +23,26 @@ export default function ResetPasswordPage() {
         const url = new URL(window.location.href)
         const tokenHash = url.searchParams.get('token_hash')
         const type = url.searchParams.get('type')
+        const code = url.searchParams.get('code')
+        // Support branded admin links, standard Supabase recovery links, and callback URLs.
         if (tokenHash && type === 'recovery') {
           const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' })
           if (verifyError) throw verifyError
-          // Remove the one-time token from the visible URL after verification.
           window.history.replaceState({}, document.title, '/reset-password')
+        } else if (code) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+          if (exchangeError) throw exchangeError
+          window.history.replaceState({}, document.title, '/reset-password')
+        } else if (window.location.hash) {
+          const hash = new URLSearchParams(window.location.hash.slice(1))
+          const accessToken = hash.get('access_token')
+          const refreshToken = hash.get('refresh_token')
+          const hashType = hash.get('type')
+          if (accessToken && refreshToken && hashType === 'recovery') {
+            const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+            if (sessionError) throw sessionError
+            window.history.replaceState({}, document.title, '/reset-password')
+          }
         }
         const { data, error } = await supabase.auth.getUser()
         if (!mounted) return
