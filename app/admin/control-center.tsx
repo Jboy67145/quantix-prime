@@ -117,7 +117,7 @@ export default function ControlCenter(){
  const filterRows=(rows:any[],term:string,fields:string[])=>{const t=term.trim().toLowerCase();return rows.filter((x:any)=>!t||fields.some(f=>String(x?.[f]??'').toLowerCase().includes(t)))}
  const filteredWallets=useMemo(()=>filterRows(data?.wallets||[],walletQ,['username','user_name','user_email','user_id','available_minor','invested_minor','profit_minor']),[data,walletQ])
  const filteredDeposits=useMemo(()=>filterRows(data?.deposits||[],depositQ,['username','user_name','user_email','user_id','status','deposit_reference','sender_name','transfer_reference','amount_minor','payment_proof_name']),[data,depositQ])
- const filteredWithdrawals=useMemo(()=>filterRows(data?.withdrawals||[],withdrawalQ,['username','user_name','user_email','user_id','status','amount_minor','net_minor','account_name','account_number','bank_name']),[data,withdrawalQ])
+ const filteredWithdrawals=useMemo(()=>filterRows(data?.withdrawals||[],withdrawalQ,['username','user_name','user_email','user_id','status','amount_minor','account_name','account_number','bank_name']),[data,withdrawalQ])
  const filteredInvestments=useMemo(()=>filterRows(data?.investments||[],investmentQ,['username','user_name','user_email','user_id','plan_name_snapshot','status','principal_minor','profit_minor','maturity_minor']),[data,investmentQ])
  const filteredReferrals=useMemo(()=>filterRows(data?.referrals||[],referralQ,['referrer_username','referred_username','referrer_name','referred_name','referrer_user_id','referred_user_id','status','reward_minor']),[data,referralQ])
  const filteredLucky=useMemo(()=>filterRows(data?.draws||[],luckyQ,['title','description','reward_type','reward_minor','alternate_reward','status']),[data,luckyQ])
@@ -318,7 +318,7 @@ export default function ControlCenter(){
        const bankName=a.bank_name||a.bankName||'—'
        const accountNumber=a.account_number||a.accountNumber||'—'
        const copyBtn=(key:string,value:string,label:string)=><button type="button" className="secondary-button" aria-label={`Copy ${label}`} title={`Copy ${label}`} onClick={()=>copyValue(key,value)}>{copied===key?<Check size={15}/>:<Copy size={15}/>}<span>{copied===key?'Copied':label}</span></button>
-       return <Row key={x.id} title={(x.username?'@'+x.username+' · ':'')+x.status+' · '+naira(x.amount_minor)} meta={(x.user_name||'User')+' · '+x.user_id+' · net '+naira(x.net_minor)+' · '+date(x.created_at)}>
+       return <Row key={x.id} title={(x.username?'@'+x.username+' · ':'')+x.status+' · '+naira(x.amount_minor)} meta={(x.user_name||'User')+' · '+x.user_id+' · requested '+naira(x.amount_minor)+' · '+date(x.created_at)}>
         <div className="w-full rounded-2xl border border-white/10 bg-black/30 p-4">
          <div className="mb-3 text-sm font-semibold">Submitted payout account</div>
          <div className="grid gap-3 sm:grid-cols-3">
@@ -327,9 +327,9 @@ export default function ControlCenter(){
           <div><div className="text-xs opacity-60">Account number</div><div className="mt-1 break-all font-medium">{accountNumber}</div><div className="mt-2">{copyBtn(x.id+':number',accountNumber,'Copy account number')}</div></div>
          </div>
          <div className="mt-3 border-t border-white/10 pt-3">
-          <div className="text-xs opacity-60">Amount to pay</div>
-          <div className="mt-1 text-lg font-semibold">{naira(x.net_minor)}</div>
-          <div className="mt-2">{copyBtn(x.id+':amount',naira(x.net_minor),'Copy amount')}</div>
+          <div className="text-xs opacity-60">Exact amount to pay — no withdrawal deduction</div>
+          <div className="mt-1 text-lg font-semibold">{naira(x.amount_minor)}</div>
+          <div className="mt-2">{copyBtn(x.id+':amount',naira(x.amount_minor),'Copy exact amount')}</div>
          </div>
          <p className="mt-3 text-xs opacity-50">The account details above are the snapshot submitted with this withdrawal request. Use these details for this payment even if the user's payout account is later changed.</p>
         </div>
