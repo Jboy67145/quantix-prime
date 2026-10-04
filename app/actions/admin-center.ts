@@ -608,7 +608,6 @@ export async function generateManualPasswordResetLink(input: { userId: string })
   await log(actor, 'MANUAL_PASSWORD_RESET_LINK_GENERATED', 'USER', userId, null, {
     email: target.user.email,
     username: profile.username,
-    expires_at: data.properties?.expires_at || null,
     delivery: 'MANUAL_COPY_NO_EMAIL_SENT',
   }, 'Admin generated a password reset link for manual delivery.')
   return {
@@ -617,6 +616,5 @@ export async function generateManualPasswordResetLink(input: { userId: string })
     email: target.user.email,
     name: profile.name,
     username: profile.username,
-    expiresAt: data.properties?.expires_at || null,
   }
 }
