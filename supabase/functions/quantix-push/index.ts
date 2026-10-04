@@ -6,8 +6,11 @@ const db = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
 )
 
+const FALLBACK_PUBLIC_KEYS = new Set(["sb_publishable_TKdXl9sJqOhmIhFIv5w6ug_RrF-rKPw","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtwb3VlcHJweWNpcWZycXNsdHRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxNzcxNDcsImV4cCI6MjEwNDc1MzE0N30.8L_5BhX_3fqyyoTfGmlAoJaqiczOzjWkDBATqTR3sJs"])
+
 function authorized(req: Request) {
   const key = req.headers.get("apikey") || ""
+  if (FALLBACK_PUBLIC_KEYS.has(key)) return true
   if (key === (Deno.env.get("SUPABASE_ANON_KEY") || "")) return true
   try {
     const raw = JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS") || "{}")
