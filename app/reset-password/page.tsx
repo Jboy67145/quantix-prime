@@ -17,11 +17,27 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     let mounted = true
-    createClient().auth.getUser().then(({ data, error }) => {
-      if (!mounted) return
-      if (error || !data.user) setError('This password-reset link is invalid or has expired. Please request a new link.')
-      setReady(true)
-    }).catch(() => { if (mounted) { setError('We could not verify this reset session. Please request a new link.'); setReady(true) } })
+    async function verifyResetLink() {
+      const supabase = createClient()
+      try {
+        const url = new URL(window.location.href)
+        const tokenHash = url.searchParams.get('token_hash')
+        const type = url.searchParams.get('type')
+        if (tokenHash && type === 'recovery') {
+          const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' })
+          if (verifyError) throw verifyError
+          // Remove the one-time token from the visible URL after verification.
+          window.history.replaceState({}, document.title, '/reset-password')
+        }
+        const { data, error } = await supabase.auth.getUser()
+        if (!mounted) return
+        if (error || !data.user) setError('This password-reset link is invalid, already used, or has expired. Please request a new link.')
+        setReady(true)
+      } catch {
+        if (mounted) { setError('This password-reset link is invalid, already used, or has expired. Please request a new link.'); setReady(true) }
+      }
+    }
+    void verifyResetLink()
     return () => { mounted = false }
   }, [])
 
@@ -49,7 +65,7 @@ export default function ResetPasswordPage() {
     {ready && error && !success ? <><p className="auth-error" role="alert">{error}</p><Link className="auth-link" href="/forgot-password">Request a new reset link</Link></> : ready && !success ? <form className="auth-form" onSubmit={submit}>
       <label>New password<input type="password" autoComplete="new-password" minLength={8} maxLength={72} value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
       <label>Confirm new password<input type="password" autoComplete="new-password" minLength={8} maxLength={72} value={confirmation} onChange={(event) => setConfirmation(event.target.value)} required /></label>
-      <p className="auth-copy password-hint">Your password is never sent by email. Only the secure reset link is emailed.</p>
+      <p className="auth-copy password-hint">Your password is never shared. This one-time recovery link expires and cannot be reused.</p>
       <button className="primary-button full" disabled={pending}>{pending ? 'Updating password…' : 'Set new password'}</button>
     </form> : null}
     {success && <p className="auth-success" role="status">Password reset complete. Redirecting you to secure sign in…</p>}
