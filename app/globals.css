@@ -466,3 +466,35 @@ h1, h2, p { margin: 0; } h1 { font-size: 26px; line-height: 1.15; letter-spacing
 .qp-transaction-sheet .funding-account-list > .eyebrow { margin-bottom:10px; color:#a8d2cb!important; opacity:1!important; }
 .qp-transaction-sheet input,.qp-transaction-sheet textarea,.qp-transaction-sheet select { color:#f5fffd!important; }
 .qp-transaction-sheet input::placeholder,.qp-transaction-sheet textarea::placeholder { color:#a8c0bc!important; opacity:1!important; }
+
+/* Compact, balanced deposit sheet: reduce oversized surfaces and controls while keeping text readable. */
+.qp-transaction-sheet { padding:16px!important; border-radius:24px!important; }
+.qp-transaction-sheet .sheet-scroll { gap:10px!important; padding:0 1px 4px!important; }
+.qp-transaction-sheet .sheet-step-title,.qp-transaction-sheet .sheet-title { margin-bottom:8px!important; }
+.qp-transaction-sheet .sheet-step-title h2,.qp-transaction-sheet .sheet-title h2 { font-size:21px!important; line-height:1.2!important; letter-spacing:-.025em; }
+.qp-transaction-sheet .sheet-copy,.qp-transaction-sheet .deposit-readable-copy { font-size:12px!important; line-height:1.5!important; margin:0 0 10px!important; }
+.qp-transaction-sheet label { display:grid; gap:5px!important; margin:0 0 10px!important; font-size:12px!important; line-height:1.4!important; }
+.qp-transaction-sheet input:not([type=file]),.qp-transaction-sheet select,.qp-transaction-sheet textarea { min-height:40px!important; padding:9px 11px!important; border-radius:12px!important; font-size:13px!important; }
+.qp-transaction-sheet .funding-account-list { display:grid; gap:8px!important; margin:10px 0!important; }
+.qp-transaction-sheet .funding-account-list > .eyebrow { margin:0 0 2px!important; font-size:10px!important; }
+.qp-transaction-sheet .funding-account { padding:11px!important; border-radius:15px!important; margin:0!important; }
+.qp-transaction-sheet .funding-account .space-y-2 { display:grid!important; gap:9px!important; }
+.qp-transaction-sheet .funding-account-field { display:grid!important; grid-template-columns:minmax(0,1fr)!important; gap:3px!important; min-width:0; width:100%; }
+.qp-transaction-sheet .funding-account-value { display:flex!important; align-items:center!important; justify-content:space-between!important; gap:8px!important; min-width:0; width:100%; font-size:12px!important; line-height:1.4!important; overflow-wrap:anywhere; }
+.qp-transaction-sheet .funding-account-value > strong,.qp-transaction-sheet .funding-account-value > span { min-width:0; max-width:100%; overflow-wrap:anywhere; white-space:normal!important; font-size:12px!important; }
+.qp-transaction-sheet .funding-account-value button { flex:0 0 28px!important; width:28px!important; height:28px!important; min-width:28px!important; padding:5px!important; border-radius:8px!important; }
+.qp-transaction-sheet .funding-account-value button svg { width:12px!important; height:12px!important; }
+.qp-transaction-sheet .deposit-readable-label { font-size:9px!important; line-height:1.35!important; letter-spacing:.045em!important; }
+.qp-transaction-sheet .rounded-3xl { border-radius:16px!important; padding:12px!important; }
+.qp-transaction-sheet .rounded-3xl strong { font-size:16px!important; line-height:1.35!important; }
+.qp-transaction-sheet .deposit-readable-help { margin-top:4px!important; font-size:10px!important; line-height:1.45!important; }
+.qp-transaction-sheet .secondary-button,.qp-transaction-sheet .primary-button { min-height:38px!important; padding:9px 12px!important; border-radius:12px!important; font-size:12px!important; gap:7px!important; }
+.qp-transaction-sheet .secondary-button svg,.qp-transaction-sheet .primary-button svg { width:14px!important; height:14px!important; }
+.qp-transaction-sheet .form-error { margin:7px 0!important; font-size:11px!important; line-height:1.45!important; }
+.qp-transaction-sheet .sheet-scroll > .grid { gap:8px!important; }
+.qp-transaction-sheet .sheet-scroll > .grid > button { min-width:0; }
+@media(max-width:480px) {
+ .qp-transaction-sheet { width:calc(100vw - 20px)!important; max-width:420px!important; padding:13px!important; border-radius:21px!important; }
+ .qp-transaction-sheet .sheet-step-title h2,.qp-transaction-sheet .sheet-title h2 { font-size:19px!important; }
+ .qp-transaction-sheet .funding-account { padding:10px!important; }
+}
