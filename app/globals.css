@@ -148,3 +148,43 @@ h1, h2, p { margin: 0; } h1 { font-size: 26px; line-height: 1.15; letter-spacing
 
 
 .logo-brand{overflow:hidden;border-radius:50%!important;background:transparent!important;border:0!important;padding:0!important}.logo-brand img{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%;}
+
+
+/* Admin Control Center: viewport-fit, compact density, and touch-safe controls. */
+.admin-shell { width:100%; min-height:100svh; padding:clamp(8px,1.6vw,20px); overflow-x:clip; }
+.admin-frame { width:100%; max-width:none; margin:0 auto; }
+.admin-frame > header { padding:clamp(10px,1.5vw,16px); }
+.admin-frame > header nav { scrollbar-width:thin; overscroll-behavior-x:contain; }
+.admin-frame > section.grid { padding:clamp(10px,1.4vw,16px); gap:clamp(8px,1vw,12px); }
+.admin-frame > section.grid > div { min-width:0; padding:clamp(11px,1.2vw,16px); border-radius:18px; }
+.admin-frame > section.grid > div > div:last-child { font-size:clamp(20px,2.2vw,28px); }
+.admin-frame > div.p-4 { padding:clamp(10px,1.4vw,16px); }
+.admin-frame section.rounded-3xl { min-width:0; border-radius:18px; }
+.admin-frame article { min-width:0; padding:clamp(10px,1.2vw,14px); }
+.admin-frame button, .admin-frame input, .admin-frame select, .admin-frame textarea { max-width:100%; }
+.admin-frame .danger-button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:36px; border:1px solid #8b3e49; border-radius:10px; padding:8px 12px; color:#ffd9dc; background:#49232b; font-size:12px; font-weight:650; }
+.admin-frame .danger-button:hover { background:#5b2832; }
+.admin-frame .danger-button:disabled { opacity:.5; cursor:wait; }
+@media (max-width:700px) {
+ .admin-shell { padding:0; }
+ .admin-frame > header { padding:10px 10px 8px; }
+ .admin-frame > header > div { flex-wrap:wrap; }
+ .admin-frame > header > div > div:first-child { min-width:0; flex:1 1 auto; gap:8px; }
+ .admin-frame .logo-brand { display:none; }
+ .admin-frame > header nav { margin-top:10px; gap:6px; }
+ .admin-frame > header nav button { min-height:36px; padding:8px 10px; font-size:12px; }
+ .admin-frame > section.grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .admin-frame > section.grid > div { padding:11px; }
+ .admin-frame > div.p-4 { padding:10px; }
+ .admin-frame section.rounded-3xl { padding:12px; }
+ .admin-frame article { align-items:flex-start; gap:10px; }
+ .admin-frame article > div:last-child { width:100%; }
+ .admin-frame article > div:last-child button { flex:1 1 auto; min-height:38px; }
+}
+@media (max-width:360px) {
+ .admin-frame > header .secondary-button { padding:7px 9px; font-size:11px; }
+ .admin-frame > section.grid { gap:7px; }
+ .admin-frame > section.grid > div > div:first-child { font-size:11px; }
+ .admin-frame article > div:last-child button { flex-basis:100%; }
+}
+@media (prefers-reduced-motion:reduce) { .admin-frame * { scroll-behavior:auto !important; } }
