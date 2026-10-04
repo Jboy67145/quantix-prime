@@ -432,3 +432,14 @@ h1, h2, p { margin: 0; } h1 { font-size: 26px; line-height: 1.15; letter-spacing
 .admin-scroll-top-fab:active svg{transform:scale(1.2);filter:drop-shadow(0 2px 7px rgba(84,219,194,.35))}
 @media(max-width:700px){.admin-notification-push{align-items:flex-start;flex-direction:column}.admin-scroll-top-fab{right:14px;bottom:max(16px,calc(env(safe-area-inset-bottom) + 16px));width:46px;height:46px;border-radius:17px}}
 @media(prefers-reduced-motion:reduce){.admin-scroll-top-fab,.admin-scroll-top-fab svg{transition:none!important}.admin-scroll-top-fab:active,.admin-scroll-top-fab:active svg{transform:none!important;filter:none!important}}
+
+/* Deposit sheet readability: explanatory text and field labels must remain legible on glass surfaces. */
+.qp-transaction-sheet .deposit-readable-copy { color: #d8e8e7 !important; opacity: 1 !important; line-height: 1.65; font-size: 14px; }
+.qp-transaction-sheet .deposit-readable-help { display: block; margin-top: 6px; color: #bfd3d2 !important; opacity: 1 !important; font-size: 12px; line-height: 1.55; }
+.qp-transaction-sheet .deposit-readable-label { display: block; color: #b8d0ce !important; opacity: 1 !important; font-size: 11px; font-weight: 700; letter-spacing: .045em; line-height: 1.5; text-transform: uppercase; }
+.qp-transaction-sheet .sheet-copy { color: #d8e8e7; opacity: 1; line-height: 1.65; }
+.qp-transaction-sheet .funding-account { color: #f2fbf9; }
+.qp-transaction-sheet .funding-account .truncate { color: #f2fbf9; }
+.qp-transaction-sheet .form-error { color: #ffb8b4; font-weight: 600; line-height: 1.5; }
+.qp-transaction-sheet input[type="file"] { color: #e5f2f0; }
+.qp-transaction-sheet input[type="file"]::file-selector-button { margin-right: 10px; padding: 8px 12px; border: 1px solid #4b7778; border-radius: 10px; background: #173a40; color: #f2fbf9; }
