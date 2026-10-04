@@ -602,9 +602,14 @@ export async function generateManualPasswordResetLink(input: { userId: string })
     email: target.user.email,
     options: { redirectTo },
   })
-  if (error || !data?.properties?.action_link) {
-    throw new Error(error?.message || 'Supabase did not generate a password recovery link.')
+  const tokenHash = data?.properties?.hashed_token
+  if (error || !tokenHash) {
+    throw new Error(error?.message || 'Supabase did not generate a password recovery token.')
   }
+  // Branded, single-use URL; the token hash is verified by Supabase Auth on the reset page.
+  const brandedLink = new URL('/reset-password', getAppUrl())
+  brandedLink.searchParams.set('token_hash', tokenHash)
+  brandedLink.searchParams.set('type', 'recovery')
   await log(actor, 'MANUAL_PASSWORD_RESET_LINK_GENERATED', 'USER', userId, null, {
     email: target.user.email,
     username: profile.username,
@@ -612,7 +617,7 @@ export async function generateManualPasswordResetLink(input: { userId: string })
   }, 'Admin generated a password reset link for manual delivery.')
   return {
     ok: true,
-    link: data.properties.action_link,
+    link: brandedLink.toString(),
     email: target.user.email,
     name: profile.name,
     username: profile.username,
