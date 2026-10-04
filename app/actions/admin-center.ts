@@ -596,7 +596,7 @@ export async function generateManualPasswordResetLink(input: { userId: string })
     throw new Error('Manual reset links for administrator accounts require the dedicated administrator recovery process.')
   }
   const { getAppUrl } = await import('@/lib/env')
-  const redirectTo = `${getAppUrl()}/reset-password`
+  const redirectTo = `${getAppUrl()}/auth/callback?next=/reset-password`
   const { data, error } = await service.auth.admin.generateLink({
     type: 'recovery',
     email: target.user.email,
