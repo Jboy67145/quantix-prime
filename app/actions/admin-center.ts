@@ -172,6 +172,7 @@ const plan=z.object({
   durationDays:z.number().int().positive().max(3650),
   terms:z.string().trim().min(2).max(5000),
   purchaseBonusMinor:z.number().int().nonnegative(),
+  maxPurchasesPerUser:z.number().int().min(0).max(1000000),
   active:z.boolean(),
   displayOrder:z.number().int().min(0).max(9999),
 })
@@ -187,7 +188,7 @@ export async function savePlan(input:z.input<typeof plan>){
     minimum_minor:d.minimumMinor,maximum_minor:d.maximumMinor,return_minor:d.returnMinor,
     return_bps:d.minimumMinor>0?Math.round(d.returnMinor*10000/d.minimumMinor):0,
     duration_days:d.durationDays,terms:d.terms,purchase_bonus_minor:d.purchaseBonusMinor,
-    active:d.active,display_order:d.displayOrder,deleted_at:null,updated_at:new Date().toISOString(),
+    max_purchases_per_user:d.maxPurchasesPerUser,active:d.active,display_order:d.displayOrder,deleted_at:null,updated_at:new Date().toISOString(),
   }
   const r=d.id
     ? await s.from('quantix_plans').update(payload).eq('id',d.id).select().single()
@@ -202,7 +203,7 @@ export async function savePlan(input:z.input<typeof plan>){
     title: d.id ? 'Investment plan updated' : 'New investment plan available',
     content: d.id
       ? `${r.data.name} has been updated. Review the latest investment amount, return earned, duration and purchase bonus in the Invest section.`
-      : `${r.data.name} is now available. Investment: ₦${(r.data.minimum_minor/100).toLocaleString('en-NG')}; return earned: ₦${(r.data.return_minor/100).toLocaleString('en-NG')}; duration: ${r.data.duration_days} days; purchase bonus: ₦${(r.data.purchase_bonus_minor/100).toLocaleString('en-NG')}.`,
+      : `${r.data.name} is now available. Investment: ₦${(r.data.minimum_minor/100).toLocaleString('en-NG')}; return earned: ₦${(r.data.return_minor/100).toLocaleString('en-NG')}; duration: ${r.data.duration_days} days; purchase bonus: ₦${(r.data.purchase_bonus_minor/100).toLocaleString('en-NG')}; maximum purchases per user: ${Number(r.data.max_purchases_per_user||0)===0?'unlimited':r.data.max_purchases_per_user}.`,
     kind: d.id ? 'PLAN_UPDATE' : 'NEW_PLAN',
   }
   const marquee=await s.from('quantix_marquee_items').insert({
