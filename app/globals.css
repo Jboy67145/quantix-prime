@@ -338,3 +338,71 @@ h1, h2, p { margin: 0; } h1 { font-size: 26px; line-height: 1.15; letter-spacing
   .fluxent-admin .admin-row { transition: none !important; }
   .fluxent-admin .admin-row:hover { transform: none; }
 }
+
+
+/* Final Fluxent tactile glass pass: restore the original dark admin backdrop. */
+.fluxent-admin {
+  color:#eafff9;
+  background:
+    radial-gradient(ellipse at 10% 0%,rgba(32,205,182,.16),transparent 34%),
+    radial-gradient(ellipse at 92% 14%,rgba(67,157,187,.12),transparent 32%),
+    radial-gradient(ellipse at 52% 100%,rgba(26,92,99,.20),transparent 44%),
+    #07151d !important;
+}
+.fluxent-admin .admin-topbar {
+  background:rgba(12,31,39,.62)!important;
+  border-color:rgba(145,222,211,.20)!important;
+  box-shadow:0 16px 44px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.08);
+}
+.fluxent-admin .admin-panel,
+.fluxent-admin .admin-stat,
+.fluxent-admin section.rounded-3xl {
+  background:linear-gradient(145deg,rgba(22,52,61,.58),rgba(8,29,37,.42))!important;
+  border-color:rgba(145,222,211,.20)!important;
+  box-shadow:0 20px 55px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.08);
+  backdrop-filter:blur(24px) saturate(145%);
+  -webkit-backdrop-filter:blur(24px) saturate(145%);
+}
+.fluxent-admin .admin-row,
+.fluxent-admin article.rounded-2xl {
+  background:linear-gradient(135deg,rgba(20,53,61,.60),rgba(9,32,40,.44))!important;
+  border-color:rgba(108,190,181,.20)!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.06);
+  backdrop-filter:blur(22px) saturate(145%);
+  -webkit-backdrop-filter:blur(22px) saturate(145%);
+}
+.fluxent-admin .admin-panel,
+.fluxent-admin .admin-row { position:relative; isolation:isolate; overflow:hidden; }
+.fluxent-admin .admin-panel::before,
+.fluxent-admin .admin-row::before {
+  content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(120deg,rgba(255,255,255,.07),transparent 42%,rgba(84,219,194,.035));
+}
+.fluxent-admin .admin-panel > *,
+.fluxent-admin .admin-row > * { position:relative;z-index:1; }
+.fluxent-admin .admin-panel h2,
+.fluxent-admin .admin-row strong { color:#eafff9!important; }
+.fluxent-admin .admin-row .text-xs,
+.fluxent-admin .admin-panel .opacity-60,
+.fluxent-admin .admin-panel .opacity-70 { color:#9db8b4; }
+
+/* Liquid tap: the icon swells while the control subtly compresses. */
+.fluxent-admin button,.fluxent-admin a { -webkit-tap-highlight-color:transparent; }
+.fluxent-admin button svg,.fluxent-admin a svg {
+  transform-origin:center;
+  transition:transform .22s cubic-bezier(.2,.9,.25,1.35),filter .22s ease;
+}
+.fluxent-admin button:active svg,.fluxent-admin a:active svg {
+  transform:scale(1.16);
+  filter:drop-shadow(0 2px 7px rgba(84,219,194,.30));
+}
+.fluxent-admin .icon-button:active svg,.fluxent-admin .nav-item:active svg {
+  transform:scale(1.22);
+}
+.fluxent-admin .icon-button:active,.fluxent-admin .nav-item:active {
+  transform:scale(.97);
+}
+@media(prefers-reduced-motion:reduce) {
+  .fluxent-admin button svg,.fluxent-admin a svg { transition:none!important; }
+  .fluxent-admin button:active svg,.fluxent-admin a:active svg { transform:none!important;filter:none!important; }
+}
