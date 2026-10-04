@@ -152,7 +152,7 @@ export default function ControlCenter(){
   ['ledger','Ledger',ScrollText],['audit','Audit Logs',ScrollText],['settings','Settings',Settings]
  ]
 
- return <main className="admin-shell">
+ return <main className="admin-shell fluxent-admin">
   <div className="admin-frame fluxent-admin-frame max-w-7xl">
    <header className="admin-topbar sticky top-0 z-20 border-b px-4 py-4 backdrop-blur-xl">
     <div className="flex items-center justify-between gap-3">
@@ -514,6 +514,6 @@ export default function ControlCenter(){
 }
 
 function SearchBox({value,onChange,placeholder,count,total}:{value:string;onChange:(v:string)=>void;placeholder:string;count:number;total:number}){return <div className="mb-4 flex items-center gap-2"><Search size={17} className="shrink-0 opacity-50"/><input className="account-form flex-1" value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} aria-label={placeholder}/>{value.trim()&&<button type="button" className="secondary-button" onClick={()=>onChange('')}>Clear</button>}<span className="text-xs whitespace-nowrap opacity-50">{count}/{total}</span></div>}
-function Panel(p:any){return <section className="rounded-3xl border border-white/10 bg-white/5 p-5"><h2 className="mb-4 text-lg font-semibold">{p.title}</h2>{p.children}</section>}
-function Row(p:any){return <article className="mb-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 p-4"><div className="min-w-0"><strong className="block break-words">{p.title}</strong><span className="text-xs opacity-60 break-all">{p.meta}</span></div><div className="flex flex-wrap gap-2">{p.children}</div></article>}
+function Panel(p:any){return <section className="admin-panel rounded-3xl border border-white/10 bg-white/5 p-5"><h2 className="mb-4 text-lg font-semibold">{p.title}</h2>{p.children}</section>}
+function Row(p:any){return <article className="admin-row mb-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 p-4"><div className="min-w-0"><strong className="block break-words">{p.title}</strong><span className="text-xs opacity-60 break-all">{p.meta}</span></div><div className="flex flex-wrap gap-2">{p.children}</div></article>}
 function Empty({text}:{text:string}){return <div className="rounded-2xl border border-dashed border-white/10 p-6 text-sm opacity-60">{text}</div>}
