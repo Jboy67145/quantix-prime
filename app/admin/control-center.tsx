@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import {
   getAdminCenter,savePlan,saveMarquee,archiveMarquee,deleteMarquee,archivePlan,setUserState,savePolicy,saveDepositPolicy,sendAdminNotification,
   createDraw,updateDraw,toggleDraw,deleteDraw,updateReferral,archivePayout,restorePayout,
-  updateUserProfile,processInvestmentMaturity,cancelInvestment
+  updateUserProfile,processInvestmentMaturity,cancelInvestment,generateManualPasswordResetLink
 } from '@/app/actions/admin-center'
 import { adjustUserBalance,reviewDeposit } from '@/app/actions/admin'
 import { reviewWithdrawal } from '@/app/actions/control'
@@ -41,6 +41,9 @@ export default function ControlCenter(){
  const [ledgerQ,setLedgerQ]=useState('')
  const [auditQ,setAuditQ]=useState('')
  const [accountQ,setAccountQ]=useState('')
+ const [passwordSearch,setPasswordSearch]=useState('')
+ const [passwordTarget,setPasswordTarget]=useState<any>(null)
+ const [manualResetLink,setManualResetLink]=useState('')
  const [manageOpen,setManageOpen]=useState(false)
  const [marqueeManageOpen,setMarqueeManageOpen]=useState(false)
  const [selectedUser,setSelectedUser]=useState<any>(null)
@@ -145,7 +148,7 @@ export default function ControlCenter(){
  if(!data)return <main className="admin-shell fluxent-admin"><div className="admin-frame"><div className="admin-shimmer" role="status" aria-live="polite"><div className="shimmer-block shimmer-title"/><div className="shimmer-grid">{Array.from({length:5}).map((_,i)=><div className="shimmer-block shimmer-stat" key={i}/>)}</div><div className="shimmer-block shimmer-panel"/><div className="shimmer-block shimmer-panel"/><p className="qp-loading-status">{loadingMessage}</p></div></div></main>
 
  const tabs:any[]=[
-  ['overview','Overview',Shield],['users','Users',Users],['wallet','Wallet',Wallet],
+  ['overview','Overview',Shield],['users','Users',Users],['passwords','Password Management',Shield],['wallet','Wallet',Wallet],
   ['deposits','Deposits',Landmark],['withdrawals','Withdrawals',Wallet],
   ['investments','Investments',TrendingUp],['plans','Plans',TrendingUp],
   ['referrals','Referrals',Users],['lucky','Lucky Wish',Gift],['communities','Communities',Users],['notifications','Notifications',Bell],
@@ -194,6 +197,30 @@ export default function ControlCenter(){
       <Panel title="Recent audit activity">{data.audits.slice(0,20).map((x:any)=><Row key={x.id} title={x.action} meta={x.target_type+' · '+date(x.created_at)}/>)}</Panel>
     </div>}
 
+    {tab==='passwords'&&<Panel title="Manual Password Reset">
+      <p className="mb-4 text-sm opacity-70">Search for the exact account, verify the user's details, then generate a secure reset link to copy and send manually. No email is sent by this tool.</p>
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row">
+       <input className="account-form flex-1" placeholder="Search full name, username, email or user ID" value={passwordSearch} onChange={e=>{setPasswordSearch(e.target.value);setPasswordTarget(null);setManualResetLink('')}}/>
+       <button type="button" className="secondary-button" onClick={()=>{setPasswordSearch('');setPasswordTarget(null);setManualResetLink('')}}>Clear search</button>
+      </div>
+      {(data.profiles||[]).filter((u:any)=>{const t=passwordSearch.trim().toLowerCase();return t&&[u.name,u.username,u.email,u.id].some((v:any)=>String(v||'').toLowerCase().includes(t))}).slice(0,30).map((u:any)=><Row key={u.id} title={(u.name||'Unnamed')+' · '+(u.username||'No username')} meta={(u.email||'No email')+' · '+u.status+' · '+u.role+' · '+u.id}>
+       <button type="button" className="primary-button" onClick={()=>{setPasswordTarget(u);setManualResetLink('');setError('');setSuccess('')}}>Select user</button>
+      </Row>)}
+      {passwordSearch.trim()&&!((data.profiles||[]).some((u:any)=>[u.name,u.username,u.email,u.id].some((v:any)=>String(v||'').toLowerCase().includes(passwordSearch.trim().toLowerCase()))))&&<Empty text="No matching account found."/>}
+      {passwordTarget&&<div className="mt-5 rounded-3xl border border-white/10 bg-black/20 p-5">
+       <div className="text-xs uppercase tracking-wider opacity-50">Confirm account before reset</div>
+       <h3 className="mt-2 text-xl font-semibold">{passwordTarget.name||'Unnamed user'}</h3>
+       <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        { [['Full name',passwordTarget.name||'—'],['Email',passwordTarget.email||'—'],['Username',passwordTarget.username||'—'],['User ID',passwordTarget.id||'—'],['Account status',passwordTarget.status||'—'],['Password','Please set password on the admin page']] .map(([label,value]:any)=><div key={label} className="rounded-2xl border border-white/10 p-3"><span className="text-xs opacity-60">{label}</span><div className="mt-1 break-all font-medium">{value}</div></div>)}
+       </div>
+       <p className="mt-3 text-xs opacity-60">The current password cannot be viewed. Generating a link does not send email or change the password. Share the link only with the verified account owner.</p>
+       <div className="mt-4 flex flex-wrap gap-2">
+        <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>void act('manual-reset-link',async()=>{const result=await generateManualPasswordResetLink({userId:passwordTarget.id});setManualResetLink(result.link);return result},'Manual password reset link generated. No email was sent.')}> {busy==='manual-reset-link'?'Generating secure link…':'Generate manual reset link'}</button>
+        <button type="button" className="secondary-button" onClick={()=>{setPasswordTarget(null);setManualResetLink('')}}>Close</button>
+       </div>
+       {manualResetLink&&<div className="mt-4 rounded-2xl border border-emerald-400/20 p-4"><label className="text-sm font-semibold">Copy reset link</label><textarea className="account-form mt-2 min-h-24 w-full" readOnly value={manualResetLink}/><button type="button" className="primary-button mt-2" onClick={()=>void copyValue('manual-reset-link',manualResetLink)}> <Copy size={15}/>{copied==='manual-reset-link'?'Copied':'Copy reset link'}</button><p className="mt-2 text-xs opacity-60">Treat this link like a temporary credential. It expires according to the Supabase Auth recovery-token settings and should be sent privately.</p></div>}
+      </div>}
+    </Panel>}
     {tab==='users'&&<Panel title={`Registered accounts · ${data.registeredAccountCount}`}>
       <div className="mb-4 flex flex-col gap-2 sm:flex-row"><div className="flex flex-1 gap-2"><Search className="mt-3 opacity-50"/><input className="account-form flex-1" placeholder="Search name, username, email or UUID" value={q} onChange={e=>setQ(e.target.value)}/></div><div className="secondary-button"><Users size={15}/>{users.length} shown · {data.registeredUserCount} users · {data.adminAccountCount} admins</div></div>
       {users.map((u:any)=><Row key={u.id} title={(u.name||'Unnamed')+' · '+(u.username||'No username')} meta={(u.email||'No email')+' · '+u.status+' · '+u.role+' · '+u.id+' · '+naira(u.available_balance_minor)+' available · '+naira(u.invested_balance_minor)+' invested · '+naira(u.profit_balance_minor)+' profit'}>
