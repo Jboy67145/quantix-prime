@@ -498,3 +498,19 @@ h1, h2, p { margin: 0; } h1 { font-size: 26px; line-height: 1.15; letter-spacing
  .qp-transaction-sheet .sheet-step-title h2,.qp-transaction-sheet .sheet-title h2 { font-size:19px!important; }
  .qp-transaction-sheet .funding-account { padding:10px!important; }
 }
+
+/* Extra-small receiving account tiles and compact deposit reference placement. */
+.qp-transaction-sheet .funding-account-list { gap:5px!important; margin:6px 0!important; }
+.qp-transaction-sheet .funding-account { padding:7px 9px!important; border-radius:11px!important; }
+.qp-transaction-sheet .funding-account .space-y-2 { gap:5px!important; }
+.qp-transaction-sheet .funding-account-field { gap:1px!important; }
+.qp-transaction-sheet .funding-account .deposit-readable-label { font-size:8px!important; line-height:1.2!important; letter-spacing:.035em!important; }
+.qp-transaction-sheet .funding-account-value { gap:5px!important; font-size:11px!important; line-height:1.25!important; }
+.qp-transaction-sheet .funding-account-value > strong,.qp-transaction-sheet .funding-account-value > span { font-size:11px!important; line-height:1.25!important; }
+.qp-transaction-sheet .funding-account-value button { flex-basis:24px!important; width:24px!important; height:24px!important; min-width:24px!important; padding:4px!important; }
+.qp-transaction-sheet .funding-account-value button svg { width:11px!important; height:11px!important; }
+.qp-transaction-sheet .deposit-reference-card { margin-top:7px!important; padding:9px 11px!important; border-radius:12px!important; }
+.qp-transaction-sheet .deposit-reference-card .deposit-readable-label { font-size:8px!important; line-height:1.25!important; }
+.qp-transaction-sheet .deposit-reference-card > strong { display:block; margin-top:4px!important; font-size:13px!important; line-height:1.25!important; overflow-wrap:anywhere; }
+.qp-transaction-sheet .deposit-reference-card .deposit-readable-copy { margin:5px 0 0!important; font-size:10px!important; line-height:1.35!important; }
+.qp-transaction-sheet .deposit-reference-card .secondary-button { margin-top:7px!important; min-height:28px!important; padding:6px 9px!important; font-size:10px!important; border-radius:9px!important; }
