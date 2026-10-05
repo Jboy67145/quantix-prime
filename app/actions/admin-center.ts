@@ -335,6 +335,7 @@ const depositPolicy=z.object({
   enabledDays:z.array(z.enum(['MON','TUE','WED','THU','FRI','SAT','SUN'])).min(1),
   startTime:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   endTime:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  minimumMinor:z.number().int().min(1),
   enabled:z.boolean(),
 })
 
@@ -342,7 +343,7 @@ export async function saveDepositPolicy(input:z.input<typeof depositPolicy>){
   const a=await ctx(),d=depositPolicy.parse(input),s=await createClient()
   try{ new Intl.DateTimeFormat('en-US',{timeZone:d.timezone}).format() }catch{ throw new Error('Enter a valid IANA timezone, for example Africa/Lagos.') }
   const old=(await s.from('quantix_deposit_settings').select('*').limit(1).maybeSingle()).data
-  const payload={singleton:true,timezone:d.timezone,enabled_days:d.enabledDays,start_time:d.startTime,end_time:d.endTime,enabled:d.enabled,updated_at:new Date().toISOString()}
+  const payload={singleton:true,timezone:d.timezone,enabled_days:d.enabledDays,start_time:d.startTime,end_time:d.endTime,minimum_minor:d.minimumMinor,enabled:d.enabled,updated_at:new Date().toISOString()}
   const r=old
     ? await s.from('quantix_deposit_settings').update(payload).eq('id',old.id).select().single()
     : await s.from('quantix_deposit_settings').insert(payload).select().single()
