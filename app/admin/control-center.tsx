@@ -21,7 +21,7 @@ const days=['MON','TUE','WED','THU','FRI','SAT','SUN']
 const emptyPlan={name:'',description:'',category:'MONTHLY',minimumMinor:1000000,maximumMinor:1000000,returnMinor:100000,durationDays:30,terms:'',purchaseBonusMinor:0,maxPurchasesPerUser:0,active:true,displayOrder:1}
 const emptyDraw={title:'',description:'',rewardType:'CASH',rewardMinor:0,alternateReward:'',entryCostMinor:0,opensAt:'',closesAt:'',winnerCount:1}
 const emptyPolicy={timezone:'Africa/Lagos',enabledDays:['MON','TUE','WED','THU','FRI'],startTime:'09:00',endTime:'17:00',minimumMinor:100000,maximumMinor:null,enabled:true}
-const emptyDepositPolicy={timezone:'Africa/Lagos',enabledDays:['MON','TUE','WED','THU','FRI'],startTime:'09:00',endTime:'17:00',enabled:true}
+const emptyDepositPolicy={timezone:'Africa/Lagos',enabledDays:['MON','TUE','WED','THU','FRI'],startTime:'09:00',endTime:'17:00',minimumMinor:100000,enabled:true}
 
 export default function ControlCenter(){
  const router=useRouter()
@@ -80,6 +80,7 @@ export default function ControlCenter(){
      if(d.depositSettings)setDepositPolicy({
        timezone:d.depositSettings.timezone,enabledDays:d.depositSettings.enabled_days||[],
        startTime:d.depositSettings.start_time,endTime:d.depositSettings.end_time,
+       minimumMinor:Number(d.depositSettings.minimum_minor||100000),
        enabled:Boolean(d.depositSettings.enabled)
      })
    }catch(e){setError(e instanceof Error?e.message:'Unable to load control center.')}
@@ -513,9 +514,10 @@ export default function ControlCenter(){
         <label className="admin-field"><span>Policy timezone</span><input className="account-form" value={depositPolicy.timezone} onChange={e=>setDepositPolicy({...depositPolicy,timezone:e.target.value})} placeholder="Africa/Lagos"/><small>Timezone used to interpret the deposit schedule.</small></label>
         <div className="admin-field"><span>Allowed deposit days</span><div className="flex flex-wrap gap-2">{days.map(d=><label key={d} className="admin-checkbox"><input type="checkbox" checked={depositPolicy.enabledDays.includes(d)} onChange={e=>setDepositPolicy({...depositPolicy,enabledDays:e.target.checked?[...depositPolicy.enabledDays,d]:depositPolicy.enabledDays.filter((x:string)=>x!==d)})}/>{d}</label>)}</div><small>New deposit submissions are limited to these days when the policy is enabled.</small></div>
         <div className="grid grid-cols-2 gap-2"><label className="admin-field"><span>Opens</span><input className="account-form mt-1 w-full" type="time" value={depositPolicy.startTime} onChange={e=>setDepositPolicy({...depositPolicy,startTime:e.target.value})}/><small>Start of the permitted deposit window.</small></label><label className="admin-field"><span>Closes</span><input className="account-form mt-1 w-full" type="time" value={depositPolicy.endTime} onChange={e=>setDepositPolicy({...depositPolicy,endTime:e.target.value})}/><small>End of the permitted deposit window.</small></label></div>
-        <p className="admin-help">Deposit submissions outside this schedule are blocked by the server and database policy.</p>
+        <label className="admin-field"><span>Minimum deposit (₦)</span><input className="account-form" type="number" min="1" step="1" value={depositPolicy.minimumMinor/100} onChange={e=>setDepositPolicy({...depositPolicy,minimumMinor:Math.round(Number(e.target.value)*100)})} placeholder="Minimum deposit ₦"/><small>Smallest deposit amount customers are allowed to submit. This is enforced on the server, not only in the admin interface.</small></label>
+        <p className="admin-help">Deposit submissions outside this schedule or below the configured minimum are blocked by the server and database policy.</p>
         <label className="admin-checkbox"><input type="checkbox" checked={depositPolicy.enabled} onChange={e=>setDepositPolicy({...depositPolicy,enabled:e.target.checked})}/> Deposits enabled</label>
-        <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>{if(!depositPolicy.enabledDays.length)return setError('Select at least one deposit day.');void act('deposit-policy',()=>saveDepositPolicy(depositPolicy),'Deposit policy saved.')}}><Save size={15}/>Save deposit policy</button>
+        <button type="button" className="primary-button" disabled={Boolean(busy)} onClick={()=>{if(!depositPolicy.enabledDays.length)return setError('Select at least one deposit day.');if(!Number.isInteger(depositPolicy.minimumMinor)||depositPolicy.minimumMinor<1)return setError('Minimum deposit must be greater than ₦0.');void act('deposit-policy',()=>saveDepositPolicy(depositPolicy),'Deposit policy saved.')}}><Save size={15}/>Save deposit policy</button>
       </div></Panel>
     </div>}
    </div>
