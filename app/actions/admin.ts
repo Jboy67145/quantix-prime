@@ -58,7 +58,12 @@ const balanceAdjustmentSchema = z.object({
 export async function adjustUserBalance(input: z.input<typeof balanceAdjustmentSchema>) {
   await getAdmin()
   const data = balanceAdjustmentSchema.parse(input)
+  const actor = await requireAdminUser()
   const supabase = await createClient()
+  const { data: targetProfile } = await supabase.from('profiles').select('role').eq('id', data.userId).maybeSingle()
+  if (targetProfile && ['ADMIN','SUPER_ADMIN'].includes(String(targetProfile.role||'').toUpperCase()) && String(actor.profile.role||'').toUpperCase()!=='SUPER_ADMIN') {
+    throw new Error('Only Super Admin can adjust an administrator wallet.')
+  }
   const { data: result, error } = await supabase.rpc('admin_adjust_balance', {
     p_user_id: data.userId,
     p_amount_minor: data.amountMinor,
