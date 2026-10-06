@@ -8,17 +8,19 @@ export const metadata = {
 }
 
 export default async function OperationsAdminPage() {
+  let profile
   try {
-    const { profile } = await requireAdminUser()
-    if (String(profile.role || '').toUpperCase() === 'SUPER_ADMIN') {
-      redirect('/qx7-ops-4m9k2')
-    }
+    profile = (await requireAdminUser()).profile
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       redirect('/sign-in?next=/qx7-admin-ops-7h2p8')
     }
-    if (error instanceof Error && error.message === 'NEXT_REDIRECT') throw error
     redirect('/')
   }
+
+  if (String(profile.role || '').toUpperCase() === 'SUPER_ADMIN') {
+    redirect('/qx7-ops-4m9k2')
+  }
+
   return <ControlCenter mode="operations" />
 }
