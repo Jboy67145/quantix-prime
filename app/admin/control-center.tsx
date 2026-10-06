@@ -23,8 +23,10 @@ const emptyDraw={title:'',description:'',rewardType:'CASH',rewardMinor:0,alterna
 const emptyPolicy={timezone:'Africa/Lagos',enabledDays:['MON','TUE','WED','THU','FRI'],startTime:'09:00',endTime:'17:00',minimumMinor:100000,maximumMinor:null,enabled:true}
 const emptyDepositPolicy={timezone:'Africa/Lagos',enabledDays:['MON','TUE','WED','THU','FRI'],startTime:'09:00',endTime:'17:00',minimumMinor:100000,enabled:true}
 
-export default function ControlCenter(){
+export default function ControlCenter({ mode = 'super' }: { mode?: 'super' | 'operations' }){
  const router=useRouter()
+ const isOperations=mode==='operations'
+ const allowedOperationTabs=new Set(['overview','users','wallet','deposits','withdrawals','investments','referrals','communities','notifications','payouts','ledger','audit'])
  const [data,setData]=useState<any>(null)
  const [tab,setTab]=useState('overview')
  const [busy,setBusy]=useState('')
@@ -94,6 +96,8 @@ export default function ControlCenter(){
    return()=>window.clearInterval(timer)
  },[data])
 
+ useEffect(()=>{ if(isOperations && !allowedOperationTabs.has(tab)) setTab('overview') },[isOperations,tab])
+
  useEffect(()=>{ const onScroll=()=>{setAdminScrolling(true);window.clearTimeout((window as any).__qxScroll);(window as any).__qxScroll=window.setTimeout(()=>setAdminScrolling(false),420)};window.addEventListener('scroll',onScroll,{passive:true});return()=>window.removeEventListener('scroll',onScroll)},[])
 
  useEffect(()=>{
@@ -157,7 +161,7 @@ export default function ControlCenter(){
   ['referrals','Referrals',Users],['lucky','Lucky Wish',Gift],['communities','Communities',Users],['notifications','Notifications',Bell],
   ['accounts','Bank Accounts',Landmark],['payouts','Payout Accounts',Landmark],
   ['ledger','Ledger',ScrollText],['audit','Audit Logs',ScrollText],['passwords','Password Management',Shield],['settings','Settings',Settings]
- ]
+ ].filter(([id])=>!isOperations || allowedOperationTabs.has(id))
 
  return <main className="admin-shell fluxent-admin">
   <div className="admin-frame fluxent-admin-frame max-w-7xl">
@@ -166,7 +170,7 @@ export default function ControlCenter(){
      <div className="flex items-center gap-3">
       <button type="button" aria-label="Go back" className="icon-button" onClick={()=>router.back()}><ArrowLeft size={17}/></button>
       <a href="/" className="secondary-button whitespace-nowrap">User Home</a>
-      <div className="brand-mark logo-brand"><img src="/icon.svg" alt="Quantix Prime" /></div><div><strong>quantix</strong><span className="block text-xs tracking-[.25em] opacity-60">PRIME CONTROL CENTER</span></div>
+      <div className="brand-mark logo-brand"><img src="/icon.svg" alt="Quantix Prime" /></div><div><strong>quantix</strong><span className="block text-xs tracking-[.25em] opacity-60">{isOperations?'PRIME OPERATIONS':'PRIME CONTROL CENTER'}</span></div>
      </div>
      <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>window.location.reload()} title="Refresh the entire admin system"><RefreshCw size={16}/> Refresh</button>
     </div>
@@ -178,10 +182,10 @@ export default function ControlCenter(){
    {error&&<div className="admin-error m-4" role="alert"><Shield size={17}/><span>{error}</span></div>}
    {success&&<div className="admin-success m-4" role="status"><CheckCircle2 size={17}/><span>{success}</span></div>}
 
-   <section className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5">
+   <section className={`grid gap-3 p-4 sm:grid-cols-2 ${isOperations?'lg:grid-cols-4':'lg:grid-cols-5'}`}>
     {[
       ['Registered users',data.registeredUserCount],
-      ['Admin accounts',data.adminAccountCount],
+      ...(!isOperations ? [['Admin accounts',data.adminAccountCount]] : []),
       ['Live plans',data.plans.filter((x:any)=>x.active&&!x.deleted_at).length],
       ['Pending deposits',data.deposits.filter((x:any)=>x.status==='PENDING').length],
       ['Pending withdrawals',data.withdrawals.filter((x:any)=>x.status==='PENDING').length]
