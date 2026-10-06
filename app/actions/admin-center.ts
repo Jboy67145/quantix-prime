@@ -2,11 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { requireAdminUser } from '@/lib/auth'
+import { requireAdminUser, requireSuperAdminUser } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 
 async function ctx(){ return await requireAdminUser() }
+async function requireSuper(){ return await requireSuperAdminUser() }
 
 async function log(actor:any,action:string,type:string,id:string|null,before:any,after:any,reason?:string){
   const s=await createClient()
@@ -35,7 +36,8 @@ async function listAllAuthUsers(s:any){
 }
 
 export async function getAdminCenter(){
-  await ctx()
+  const actor=await ctx()
+  const isSuper=String(actor.profile.role||'').toUpperCase()==='SUPER_ADMIN'
   // This is a server-only, admin-authorized read. The normal authenticated client is
   // intentionally subject to RLS, which can otherwise make the admin see only its own
   // profile. The service client bypasses RLS after requireAdminUser() has succeeded.
@@ -144,7 +146,7 @@ export async function getAdminCenter(){
   const enrichedLedger=(q[15].data||[]).map(attachUser)
 
   return {
-    profiles:enrichedProfiles,
+    profiles:isSuper ? enrichedProfiles : enrichedProfiles.filter((p:any)=>!['ADMIN','SUPER_ADMIN'].includes(String(p.role||'').toUpperCase())),
     registeredAccountCount:authUsers.length,
     registeredUserCount:authUsers.filter((u:any)=>profileById.get(u.id)?.role!=='SUPER_ADMIN'&&profileById.get(u.id)?.role!=='ADMIN').length,
     adminAccountCount:authUsers.filter((u:any)=>{
@@ -152,11 +154,11 @@ export async function getAdminCenter(){
       return p?.role==='SUPER_ADMIN'||p?.role==='ADMIN'
     }).length,
     profileOnlyCount:profileRows.filter((p:any)=>!authById.has(p.id)).length,
-    wallets:enrichedWallets, plans:q[2].data||[],
+    wallets:enrichedWallets, plans:isSuper ? (q[2].data||[]) : [],
     deposits:enrichedDeposits, withdrawals:enrichedWithdrawals, investments:enrichedInvestments,
-    referrals:enrichedReferrals, draws:enrichedDraws, notifications:q[10].data||[], marqueeItems:q[11].data||[], communities:q[12].data||[],
-    accounts:q[13].data||[], payouts:enrichedPayouts, ledger:enrichedLedger,
-    audits:q[16].data||[], settings:q[17].data?.[0]||null, depositSettings:q[18].data?.[0]||null,
+    referrals:enrichedReferrals, draws:isSuper ? enrichedDraws : [], notifications:q[10].data||[], marqueeItems:q[11].data||[], communities:q[12].data||[],
+    accounts:isSuper ? (q[13].data||[]) : [], payouts:enrichedPayouts, ledger:enrichedLedger,
+    audits:q[16].data||[], settings:isSuper ? (q[17].data?.[0]||null) : null, depositSettings:isSuper ? (q[18].data?.[0]||null) : null,
   }
 }
 
@@ -178,6 +180,7 @@ const plan=z.object({
 })
 
 export async function savePlan(input:z.input<typeof plan>){
+  await requireSuper()
   const a=await ctx()
   const d=plan.parse(input)
   if(d.maximumMinor<d.minimumMinor) throw new Error('Maximum amount must be at least the minimum amount.')
@@ -227,6 +230,7 @@ export async function savePlan(input:z.input<typeof plan>){
 }
 
 export async function archivePlan(id:string,restore:boolean,reason:string){
+  await requireSuper()
   const a=await ctx(),i=uuid.parse(id),s=await createClient()
   const before=(await s.from('quantix_plans').select('*').eq('id',i).maybeSingle()).data
   if(!before) throw new Error('Investment plan not found.')
@@ -311,6 +315,7 @@ const policy=z.object({
   enabled:z.boolean(),
 })
 export async function savePolicy(input:z.input<typeof policy>){
+  await requireSuper()
   const a=await ctx(),d=policy.parse(input),s=await createClient()
   try{ new Intl.DateTimeFormat('en-US',{timeZone:d.timezone}).format() }catch{ throw new Error('Enter a valid IANA timezone, for example Africa/Lagos.') }
   if(d.minimumMinor<100000) throw new Error('Minimum withdrawal cannot be lower than ₦1,000.')
@@ -340,6 +345,7 @@ const depositPolicy=z.object({
 })
 
 export async function saveDepositPolicy(input:z.input<typeof depositPolicy>){
+  await requireSuper()
   const a=await ctx(),d=depositPolicy.parse(input),s=await createClient()
   try{ new Intl.DateTimeFormat('en-US',{timeZone:d.timezone}).format() }catch{ throw new Error('Enter a valid IANA timezone, for example Africa/Lagos.') }
   const old=(await s.from('quantix_deposit_settings').select('*').limit(1).maybeSingle()).data
@@ -432,6 +438,7 @@ const draw=z.object({
   winnerCount:z.number().int().min(1).max(1000),
 })
 export async function createDraw(input:z.input<typeof draw>){
+  await requireSuper()
   const a=await ctx(),d=draw.omit({id:true}).parse(input),s=await createClient()
   const opens=new Date(d.opensAt),closes=new Date(d.closesAt)
   if(Number.isNaN(opens.getTime())||Number.isNaN(closes.getTime())||closes<=opens) throw new Error('Choose valid opening and closing times; closing must be after opening.')
@@ -448,6 +455,7 @@ export async function createDraw(input:z.input<typeof draw>){
   return r.data
 }
 export async function updateDraw(input:z.input<typeof draw>){
+  await requireSuper()
   const a=await ctx(),d=draw.parse(input),s=await createClient()
   if(!d.id) throw new Error('Draw ID is required for editing.')
   const opens=new Date(d.opensAt),closes=new Date(d.closesAt)
@@ -466,6 +474,7 @@ export async function updateDraw(input:z.input<typeof draw>){
   return r.data
 }
 export async function deleteDraw(id:string,reason:string){
+  await requireSuper()
   const a=await ctx(),i=uuid.parse(id),s=await createClient()
   const d=z.string().trim().min(5).max(1000).parse(reason)
   const { data, error } = await s.rpc('admin_delete_lucky_draw_atomic',{p_draw_id:i,p_reason:d})
@@ -475,6 +484,7 @@ export async function deleteDraw(id:string,reason:string){
   return data
 }
 export async function toggleDraw(id:string,open:boolean){
+  await requireSuper()
   const a=await ctx(),s=await createClient(),i=uuid.parse(id)
   const before=(await s.from('quantix_lucky_draws').select('*').eq('id',i).maybeSingle()).data
   if(!before) throw new Error('Lucky Wish draw not found.')
