@@ -37,8 +37,16 @@ export function WalletDashboard({ notify, onSheetChange }: { notify: (message: s
     window.addEventListener('quantix:open-deposit', openDeposit)
     refresh()
     getPaymentAccounts().then(setFundingAccounts).catch(() => setDepositError('We could not load deposit accounts. Please try again.'))
-    const timer = window.setInterval(refresh, 15000)
-    return () => { window.clearInterval(timer); window.removeEventListener('quantix:open-deposit', openDeposit); onSheetChange?.(false) }
+    const onGlobalRefresh = () => refresh()
+    const onVisibilityChange = () => { if (!document.hidden) refresh() }
+    window.addEventListener('quantix:refresh', onGlobalRefresh)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      window.removeEventListener('quantix:refresh', onGlobalRefresh)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('quantix:open-deposit', openDeposit)
+      onSheetChange?.(false)
+    }
   }, [])
   const available = Number(data.wallet?.available_minor || 0)
   const invested = Number(data.wallet?.invested_minor || 0)
