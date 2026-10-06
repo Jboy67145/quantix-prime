@@ -271,8 +271,8 @@ export async function setUserState(id:string,status:'ACTIVE'|'SUSPENDED'|'BANNED
   const {data:before,error:readError}=await service.from('profiles').select('*').eq('id',i).maybeSingle()
   if(readError) throw new Error(`Unable to load user profile: ${readError.message}`)
   if(!before) throw new Error('User profile not found.')
-  if(['ADMIN','SUPER_ADMIN'].includes(String(before.role||'').toUpperCase()) && status!=='ACTIVE'){
-    throw new Error('Administrator accounts cannot be suspended or banned from this control. Use a separately authorized super-admin process.')
+  if(['ADMIN','SUPER_ADMIN'].includes(String(before.role||'').toUpperCase()) && String(actor.profile.role||'').toUpperCase()!=='SUPER_ADMIN'){
+    throw new Error('Only Super Admin can manage administrator account status.')
   }
 
   // Apply the authentication restriction first so a successful admin decision
