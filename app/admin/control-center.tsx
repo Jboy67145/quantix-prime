@@ -97,8 +97,10 @@ export default function ControlCenter(){
  useEffect(()=>{ const onScroll=()=>{setAdminScrolling(true);window.clearTimeout((window as any).__qxScroll);(window as any).__qxScroll=window.setTimeout(()=>setAdminScrolling(false),420)};window.addEventListener('scroll',onScroll,{passive:true});return()=>window.removeEventListener('scroll',onScroll)},[])
 
  useEffect(()=>{
-   const timer=window.setInterval(()=>{ if(!busy) void load() },15000)
-   return()=>window.clearInterval(timer)
+   const timer=window.setInterval(()=>{ if(!document.hidden && !busy) void load() },60000)
+   const onVisibilityChange=()=>{ if(!document.hidden && !busy) void load() }
+   document.addEventListener('visibilitychange',onVisibilityChange)
+   return()=>{ window.clearInterval(timer); document.removeEventListener('visibilitychange',onVisibilityChange) }
  },[busy])
 
  const act=async(k:string,fn:()=>Promise<any>,message?:string)=>{
