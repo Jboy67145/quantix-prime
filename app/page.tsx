@@ -188,6 +188,17 @@ export default function Page() {
     }
   }, [authPending, session?.user?.id])
 
+  useEffect(() => {
+    if (authPending || !session?.user) return
+    if (tab === 'wallet') getWalletSnapshot().then(setWallet).catch(() => {})
+    if (tab === 'invest') {
+      getPublicPlans().then((v) => setPlans(v as Plan[])).catch(() => {})
+      getUserInvestments().then(setInvestments).catch(() => {})
+    }
+    if (tab === 'lucky') getOpenDraws().then((v) => setDraws(v as Draw[])).catch(() => {})
+    if (tab === 'home') getMarqueeHighlights().then((v) => setMarquees(v as any[])).catch(() => {})
+  }, [tab, authPending, session?.user?.id])
+
   if (authPending) {
     return <main className="quantix-shell dark"><div className="app-frame"><div className="qp-loading-screen" role="status" aria-live="polite">
       <div className="qp-loading-card">
