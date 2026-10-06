@@ -39,6 +39,11 @@ export default function Page() {
   const [marquees, setMarquees] = useState<any[]>([])
   const [newNotice, setNewNotice] = useState<Notice | null>(null)
   const notificationBootstrapped = useRef(false)
+  const tabRef = useRef<Tab>('home')
+
+  useEffect(() => {
+    tabRef.current = tab
+  }, [tab])
 
   useEffect(() => {
     if (!authPending) return
@@ -80,17 +85,22 @@ export default function Page() {
     }
 
     const refreshAccount = () => {
+      if (document.hidden) return
       getUserInvestments().then(setInvestments).catch(() => {})
       getWalletSnapshot().then((v) => setWallet(v)).catch(() => {})
     }
 
     getPublicPlans().then((v) => setPlans(v as Plan[])).catch(() => {})
     refreshAccount()
-    const accountTimer = window.setInterval(refreshAccount, 15000)
+    // Low-frequency fallback sync; user actions and tab changes refresh immediately.
+    const accountTimer = window.setInterval(refreshAccount, 60000)
     getReferralSnapshot().then(setReferral).catch(() => {})
-    const refreshLuckyDraws = () => getOpenDraws().then((v) => setDraws(v as Draw[])).catch(() => {})
-    refreshLuckyDraws()
-    const luckyTimer = window.setInterval(refreshLuckyDraws, 30000)
+    const refreshLuckyDraws = () => {
+      if (document.hidden || tabRef.current !== 'lucky') return
+      getOpenDraws().then((v) => setDraws(v as Draw[])).catch(() => {})
+    }
+    if (tabRef.current === 'lucky') refreshLuckyDraws()
+    const luckyTimer = window.setInterval(refreshLuckyDraws, 120000)
     const setupNotifications = async () => {
       if (!('serviceWorker' in navigator)) {
         return
@@ -110,6 +120,7 @@ export default function Page() {
     }
 
     const refreshNotices = async () => {
+      if (document.hidden) return
       try {
         const next = (await getNotifications()) as Notice[]
         setNotices(current => {
@@ -134,12 +145,23 @@ export default function Page() {
         })
       } catch {}
     }
-    const refreshMarquees = () => getMarqueeHighlights().then((v) => setMarquees(v as any[])).catch(() => {})
+    const refreshMarquees = () => {
+      if (document.hidden || tabRef.current !== 'home') return
+      getMarqueeHighlights().then((v) => setMarquees(v as any[])).catch(() => {})
+    }
     void setupNotifications()
     void refreshNotices()
     void refreshMarquees()
-    const noticeTimer = window.setInterval(refreshNotices, 10000)
-    const marqueeTimer = window.setInterval(refreshMarquees, 15000)
+    const noticeTimer = window.setInterval(refreshNotices, 60000)
+    const marqueeTimer = window.setInterval(refreshMarquees, 120000)
+
+    const onVisibilityChange = () => {
+      if (document.hidden) return
+      refreshAccount()
+      refreshNotices()
+      if (tabRef.current === 'home') refreshMarquees()
+      if (tabRef.current === 'lucky') refreshLuckyDraws()
+    }
 
     const onNotificationRead = (event: Event) => {
       const id = (event as CustomEvent<{ id: string }>).detail?.id
@@ -149,11 +171,13 @@ export default function Page() {
     const onNotificationsCleared = () => { setNotices([]); setNewNotice(null); setNotificationsOpen(false) }
 
     window.addEventListener('quantix:refresh', refreshAccount)
+    document.addEventListener('visibilitychange', onVisibilityChange)
     window.addEventListener('quantix:notification-read', onNotificationRead)
     window.addEventListener('quantix:notifications-read-all', onNotificationsReadAll)
     window.addEventListener('quantix:notifications-cleared', onNotificationsCleared)
     return () => {
       window.removeEventListener('quantix:refresh', refreshAccount)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
       window.removeEventListener('quantix:notification-read', onNotificationRead)
       window.removeEventListener('quantix:notifications-read-all', onNotificationsReadAll)
       window.removeEventListener('quantix:notifications-cleared', onNotificationsCleared)
