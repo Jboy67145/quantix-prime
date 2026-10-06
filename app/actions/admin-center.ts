@@ -254,6 +254,7 @@ export async function updateUserProfile(input:z.input<typeof userProfile>){
   const a=await ctx(),d=userProfile.parse(input),s=await createClient()
   const before=(await s.from('profiles').select('*').eq('id',d.id).maybeSingle()).data
   if(!before) throw new Error('User profile not found.')
+  if(['ADMIN','SUPER_ADMIN'].includes(String(before.role||'').toUpperCase()) && String(a.profile.role||'').toUpperCase()!=='SUPER_ADMIN') throw new Error('Only Super Admin can edit administrator profiles.')
   const r=await s.from('profiles').update({name:d.name,username:d.username,updated_at:new Date().toISOString()}).eq('id',d.id).select().single()
   if(r.error){
     if(r.error.code==='23505') throw new Error('That username is already in use.')
