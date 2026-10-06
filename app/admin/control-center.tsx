@@ -161,7 +161,8 @@ export default function ControlCenter({ mode = 'super' }: { mode?: 'super' | 'op
   ['referrals','Referrals',Users],['lucky','Lucky Wish',Gift],['communities','Communities',Users],['notifications','Notifications',Bell],
   ['accounts','Bank Accounts',Landmark],['payouts','Payout Accounts',Landmark],
   ['ledger','Ledger',ScrollText],['audit','Audit Logs',ScrollText],['passwords','Password Management',Shield],['settings','Settings',Settings]
- ].filter(([id])=>!isOperations || allowedOperationTabs.has(id))
+ ]
+ const visibleTabs=isOperations ? tabs.filter((item:any)=>allowedOperationTabs.has(String(item[0]))) : tabs
 
  return <main className="admin-shell fluxent-admin">
   <div className="admin-frame fluxent-admin-frame max-w-7xl">
@@ -175,7 +176,7 @@ export default function ControlCenter({ mode = 'super' }: { mode?: 'super' | 'op
      <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>window.location.reload()} title="Refresh the entire admin system"><RefreshCw size={16}/> Refresh</button>
     </div>
     <nav aria-label="Admin sections" className="mt-4 flex gap-2 overflow-x-auto pb-1">
-     {tabs.map(([id,label,I])=><button type="button" key={id} onClick={()=>{setTab(id);setError('');setSuccess('')}} className={tab===id?'primary-button whitespace-nowrap':'secondary-button whitespace-nowrap'}><I size={15}/>{label}</button>)}
+     {visibleTabs.map(([id,label,I])=><button type="button" key={id} onClick={()=>{setTab(id);setError('');setSuccess('')}} className={tab===id?'primary-button whitespace-nowrap':'secondary-button whitespace-nowrap'}><I size={15}/>{label}</button>)}
     </nav>
    </header>
 
