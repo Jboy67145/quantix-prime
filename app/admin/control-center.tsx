@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import {
   getAdminCenter,savePlan,saveMarquee,archiveMarquee,deleteMarquee,archivePlan,setUserState,savePolicy,saveDepositPolicy,sendAdminNotification,
   createDraw,updateDraw,toggleDraw,deleteDraw,updateReferral,archivePayout,restorePayout,
-  updateUserProfile,processInvestmentMaturity,cancelInvestment,generateManualPasswordResetLink
+  updateUserProfile,setUserAdminRole,processInvestmentMaturity,cancelInvestment,generateManualPasswordResetLink
 } from '@/app/actions/admin-center'
 import { adjustUserBalance,reviewDeposit } from '@/app/actions/admin'
 import { reviewWithdrawal } from '@/app/actions/control'
@@ -220,6 +220,7 @@ export default function ControlCenter({ mode = 'super' }: { mode?: 'super' | 'op
       <div className="mb-4 flex flex-col gap-2 sm:flex-row"><div className="flex flex-1 gap-2"><Search className="mt-3 opacity-50"/><input className="account-form flex-1" placeholder="Search name, username, email or UUID" value={q} onChange={e=>setQ(e.target.value)}/></div><div className="secondary-button"><Users size={15}/>{users.length} shown · {data.registeredUserCount} users · {data.adminAccountCount} admins</div></div>
       {users.map((u:any)=><Row key={u.id} title={(u.name||'Unnamed')+' · '+(u.username||'No username')} meta={(u.email||'No email')+' · '+u.status+' · '+u.role+' · '+u.id+' · '+naira(u.available_balance_minor)+' available · '+naira(u.invested_balance_minor)+' invested · '+naira(u.profit_balance_minor)+' profit'}>
        <button type="button" className="primary-button" onClick={()=>selectUser(u)}>Manage</button>
+       {!isOperations && u.role!=='SUPER_ADMIN' && <button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>{const promote=u.role!=='ADMIN';const action=promote?'Make Admin':'Remove Admin';if(window.confirm(`${action} for ${u.name||u.username||'this user'}?`))void act('role-'+u.id,()=>setUserAdminRole(u.id,promote),promote?'User promoted to Admin.':'Admin role removed.')}}>{u.role==='ADMIN'?'Remove Admin':'Make Admin'}</button>}
        {u.status==='BANNED'
         ?<button type="button" className="secondary-button" disabled={Boolean(busy)} onClick={()=>{if(window.confirm(`Unban ${u.name||u.username||'this user'} and restore sign-in access?`))void act(u.id,()=>setUserState(u.id,'ACTIVE','Administrator removed account ban'),'User unbanned and access restored.')}}>Unban</button>
         :<>
