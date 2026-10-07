@@ -250,6 +250,33 @@ const userProfile=z.object({
   name:z.string().trim().min(2).max(120),
   username:z.string().trim().min(2).max(80).regex(/^[a-zA-Z0-9_.-]+$/),
 })
+
+export async function setUserAdminRole(userId:string, makeAdmin:boolean){
+  const actor=await requireSuper()
+  const targetId=uuid.parse(userId)
+  const service=createServiceClient()
+  const {data:target,error:targetError}=await service.from('profiles').select('id,name,username,role,status').eq('id',targetId).maybeSingle()
+  if(targetError) throw new Error(targetError.message)
+  if(!target) throw new Error('User profile not found.')
+  if(target.id===actor.user.id) throw new Error('You cannot change your own administrator role here.')
+  if(target.role==='SUPER_ADMIN') throw new Error('The Super Admin role cannot be changed from this control.')
+  const nextRole=makeAdmin?'ADMIN':'USER'
+  if(target.role===nextRole) return target
+  const {data:authUser,error:authError}=await service.auth.admin.getUserById(targetId)
+  if(authError || !authUser.user) throw new Error(authError?.message || 'The user authentication account could not be verified.')
+  const {error:profileError}=await service.from('profiles').update({role:nextRole,updated_at:new Date().toISOString()}).eq('id',targetId)
+  if(profileError) throw new Error(profileError.message)
+  const {error:metadataError}=await service.auth.admin.updateUserById(targetId,{app_metadata:{...(authUser.user.app_metadata||{}),role:nextRole}})
+  if(metadataError){
+    await service.from('profiles').update({role:target.role,updated_at:new Date().toISOString()}).eq('id',targetId)
+    throw new Error(metadataError.message)
+  }
+  await log(actor,makeAdmin?'USER_PROMOTED_TO_ADMIN':'ADMIN_DEMOTED_TO_USER','USER',targetId,target,{...target,role:nextRole},makeAdmin?'Super Admin granted administrator access.':'Super Admin removed administrator access.')
+  revalidatePath('/admin')
+  revalidatePath('/')
+  return {...target,role:nextRole}
+}
+
 export async function updateUserProfile(input:z.input<typeof userProfile>){
   const a=await ctx(),d=userProfile.parse(input),s=await createClient()
   const before=(await s.from('profiles').select('*').eq('id',d.id).maybeSingle()).data
